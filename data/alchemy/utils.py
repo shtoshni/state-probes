@@ -69,6 +69,7 @@ def gen_all_beaker_states(domain, args, encoding="NL", tokenizer=None, device='c
             if not tokenizer:
                 return nl_filtered_all_beaker_states, nl_beaker_state_to_idx
             else:
+                print(len(nl_filtered_all_beaker_states))
                 tokenized_beaker_states = tokenizer(nl_filtered_all_beaker_states, return_tensors='pt', padding=True, truncation=True).to(device)
                 return tokenized_beaker_states, nl_beaker_state_to_idx
         elif encoding == "raw":
@@ -234,7 +235,7 @@ def translate_states_to_nl(state_inputs, domain, add_space=True):
                         colors_to_amount[d_colors[item]] = 0
                     colors_to_amount[d_colors[item]] += 1
                 string = []
-                for color in colors_to_amount:
+                for color in sorted(colors_to_amount.keys()):
                     string.append(f"{colors_to_amount[color]} {color}")
                 string = " and ".join(string)
                 string = f"the {beaker_number} beaker has {string}"

@@ -132,6 +132,7 @@ print(f"Saving probe checkpoints to {probe_save_path}")
 
 # create probe model
 probe_model = get_probe_model(probe_type, probe_agg_method, probe_attn_dim, arch, model, probe_save_path, args.tgt_agg_method, encode_tgt_state=args.encode_tgt_state, device=args.device)
+print(probe_model)
 
 # load optimizer
 all_parameters = list(probe_model.parameters())
@@ -212,6 +213,10 @@ with torch.no_grad():
             probe_outs['all_states_input_ids'] = all_state_input_ids
             if encoding == "NL":
                 probe_outs['all_states_attn_mask'] = all_state_attn_mask
+                # print(all_state_attn_mask.shape)
+                # print(torch.sum(all_state_attn_mask, dim=1))
+                # print(torch.max(torch.sum(all_state_attn_mask, dim=1)))
+
                 probe_outs['all_states_encoding'] = all_state_vectors
             else:
                 # (numtotal,1,embeddim)
@@ -351,6 +356,7 @@ for i in range(args.epochs):
             valid_loss = model_outs["loss"]
             probe_val_loss += valid_loss*len(inputs['input_ids'])
             n_val += len(inputs['input_ids'])
+            print(n_val)
             if not encode_tgt_state:
                 model_outs = ModelOutput(last_hidden_state=model_outs.last_hidden_state)
                 generated_ws = full_joint_model.generate(
