@@ -222,7 +222,7 @@ with torch.no_grad():
                 # (numtotal,1,embeddim)
                 probe_outs['all_states_encoding'] = state_model(all_state_input_ids)
                 probe_outs['all_states_attn_mask'] = all_state_attn_mask
-            probe_outs['labels'] = get_matching_state_labels(all_beaker_states, beaker_state_to_idx, probe_outs, encode_tgt_state, tokenizer, device=args.device)
+            probe_outs['labels'] = get_matching_state_labels(all_beaker_states, beaker_state_to_idx, probe_outs, tokenizer, device=args.device)
         model_outs = full_joint_model(inputs['input_ids'], inputs['attention_mask'], offset_mapping=inputs['offset_mapping'], probe_outs=probe_outs, localizer_key=inputs['state_key'])
         valid_loss = model_outs["loss"]
         probe_val_loss += valid_loss*len(inputs['input_ids'])
@@ -316,7 +316,7 @@ for i in range(args.epochs):
                 # (numtotal,1,embeddim)
                 probe_outs['all_states_encoding'] = state_model(all_state_input_ids)
                 probe_outs['all_states_attn_mask'] = all_state_attn_mask
-            probe_outs['labels'] = get_matching_state_labels(all_beaker_states, beaker_state_to_idx, probe_outs, encode_tgt_state, tokenizer, device=args.device)
+            probe_outs['labels'] = get_matching_state_labels(all_beaker_states, beaker_state_to_idx, probe_outs, tokenizer, device=args.device)
         probe_loss = full_joint_model(inputs['input_ids'], inputs['attention_mask'], offset_mapping=inputs['offset_mapping'], probe_outs=probe_outs, localizer_key=inputs['state_key'])["loss"]
         probe_loss.backward()
         probe_train_losses.append(probe_loss)
