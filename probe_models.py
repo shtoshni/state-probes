@@ -371,37 +371,37 @@ def encode_target_states(state_model, dataset, tokenizer, encode_init_state, pro
     Specify either dataset or all_state_targets
     """
     # get all examples in the dataset (input + attention mask)
-    if all_state_targets is None:
-        maxseqlen = 128
-        all_state_input_ids = []
-        all_state_attn_mask = []
-        all_agg_sentence_rep = []
-        all_agg_sentence_rep_mask = []
-        for (inputs, lang_tgts, state_tgts, raw_state_targets, init_states) in convert_to_transformer_batches(
-            args, dataset, tokenizer, args.eval_batchsize, include_init_state=encode_init_state, no_context=args.no_context,
-            append_last_state_to_context=args.append_last_state_to_context, domain="alchemy", state_targets_type=args.probe_target,
-        ):
-            '''
-            model forward
-            '''
-            all_state_input_ids.append(F.pad(state_tgts['input_ids'], (0, maxseqlen - state_tgts['input_ids'].size(1), 0, 0), value=tokenizer.convert_tokens_to_ids(tokenizer.pad_token)))
-            all_state_attn_mask.append(F.pad(state_tgts['attention_mask'], (0, maxseqlen - state_tgts['attention_mask'].size(1), 0, 0), value=0))
-            # encode everything
-            # (bs, seqlen, embeddim)
-            agg_sentence_rep = state_model(input_ids=state_tgts['input_ids'], attention_mask=state_tgts['attention_mask'])[0]
-            all_agg_sentence_rep.append(agg_sentence_rep)
-        all_state_input_ids = torch.cat(all_state_input_ids, dim=0)
-        all_state_attn_mask = torch.cat(all_state_attn_mask, dim=0)
-        all_agg_sentence_rep = torch.cat(all_agg_sentence_rep, dim=0)
-    else:
-        all_state_input_ids = all_state_targets['input_ids']
-        all_state_attn_mask = all_state_targets['attention_mask']
-        '''
-        model forward
-        '''
-        # encode everything
-        # (bs, seqlen, embeddim)
-        all_agg_sentence_rep = state_model(input_ids=all_state_targets['input_ids'], attention_mask=all_state_targets['attention_mask'])[0]
+    # if all_state_targets is None:
+    #     maxseqlen = 128
+    #     all_state_input_ids = []
+    #     all_state_attn_mask = []
+    #     all_agg_sentence_rep = []
+    #     all_agg_sentence_rep_mask = []
+    #     for (inputs, lang_tgts, state_tgts, raw_state_targets, init_states) in convert_to_transformer_batches(
+    #         args, dataset, tokenizer, args.eval_batchsize, include_init_state=encode_init_state, no_context=args.no_context,
+    #         append_last_state_to_context=args.append_last_state_to_context, domain="alchemy", state_targets_type=args.probe_target,
+    #     ):
+    #         '''
+    #         model forward
+    #         '''
+    #         all_state_input_ids.append(F.pad(state_tgts['input_ids'], (0, maxseqlen - state_tgts['input_ids'].size(1), 0, 0), value=tokenizer.convert_tokens_to_ids(tokenizer.pad_token)))
+    #         all_state_attn_mask.append(F.pad(state_tgts['attention_mask'], (0, maxseqlen - state_tgts['attention_mask'].size(1), 0, 0), value=0))
+    #         # encode everything
+    #         # (bs, seqlen, embeddim)
+    #         agg_sentence_rep = state_model(input_ids=state_tgts['input_ids'], attention_mask=state_tgts['attention_mask'])[0]
+    #         all_agg_sentence_rep.append(agg_sentence_rep)
+    #     all_state_input_ids = torch.cat(all_state_input_ids, dim=0)
+    #     all_state_attn_mask = torch.cat(all_state_attn_mask, dim=0)
+    #     all_agg_sentence_rep = torch.cat(all_agg_sentence_rep, dim=0)
+    # else:
+    all_state_input_ids = all_state_targets['input_ids']
+    all_state_attn_mask = all_state_targets['attention_mask']
+    '''
+    model forward
+    '''
+    # encode everything
+    # (bs, seqlen, embeddim)
+    all_agg_sentence_rep = state_model(input_ids=all_state_targets['input_ids'], attention_mask=all_state_targets['attention_mask'])[0]
         
     # build index
     all_state_index = None

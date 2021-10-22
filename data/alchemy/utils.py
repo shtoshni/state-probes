@@ -133,55 +133,37 @@ def gen_all_beaker_amounts(domain, args, encoding="NL", tokenizer=None, device='
     else: raise NotImplementedError
 
 
-def get_matching_state_labels(all_states, beaker_state_to_idx, target_states, encode_tgt_state, tokenizer, device='cuda'):
+def get_matching_state_labels(all_states, beaker_state_to_idx, target_states, tokenizer, device='cuda'):
     """
     get indices of `target_states` among `all_states`
     (for creating label)
 
     Both are tokenized {'input_ids': torch.tensor, 'attention_mask': torch.tensor}
     """
-    bs = target_states['input_ids'].size(0)
-
     labels = []
     for i in range(len(target_states['input_ids'])):
-        if encode_tgt_state.split('.')[0] == 'NL':
-            target = tokenizer.decode(target_states['input_ids'][i], skip_special_tokens=True)
-        elif encode_tgt_state.split('.')[0] == 'raw':
-            target = tokenizer.decode(target_states['input_ids'][i], skip_special_tokens=True)
+        target = tokenizer.decode(target_states['input_ids'][i], skip_special_tokens=True)
         labels.append(beaker_state_to_idx[target])
 
     labels = torch.tensor(labels).to(device)
-    if encode_tgt_state.split('.')[0] == 'NL':
-        assert (all_states['input_ids'][labels][all_states['attention_mask'][labels].bool()] == target_states['input_ids'][target_states['attention_mask'].bool()]).all()
+    assert (all_states['input_ids'][labels][all_states['attention_mask'][labels].bool()] == target_states['input_ids'][target_states['attention_mask'].bool()]).all()
     return labels
 
 
 def encodeState(domain, state, device='cuda'):
     state = state.split(' ')
-    if domain == 'alchemy':
-        assert len(state) < len(int_to_word)
-        x = np.zeros([2, max(len(int_to_word), len(colors))])
-        for contents in state:
-            ix = int(contents.split(':')[0]) - 1
-            contents = contents.split(':')[1]  #get rid of number and colon
-            if contents == '_':
-                height = 0	
-            else:
-                height = len(contents)
-            for lvl in range(height):
-                x[0,ix] = 1; x[1,colors.index(d_colors[contents[lvl]])] += 1
-        return torch.tensor(x.flatten()).float().to(device)
-    elif domain == 'scene':
-        assert len(state) == NUM_POSITIONS
-        x = np.zeros((NUM_POSITIONS, 2, NUM_COLORS))
-
-        for ix, contents in enumerate(state):
-            assert len(contents) == 2
-            shirt, hat = contents[0], contents[1]
-            x[ix, 0, COLORS_TO_INDEX[shirt]] = 1
-            x[ix, 1, COLORS_TO_INDEX[hat]] = 1
-        return torch.tensor(x.flatten()).float().to(device)
-    else: raise NotImplementedError
+    assert len(state) < len(int_to_word)
+    x = np.zeros([2, max(len(int_to_word), len(colors))])
+    for contents in state:
+        ix = int(contents.split(':')[0]) - 1
+        contents = contents.split(':')[1]  #get rid of number and colon
+        if contents == '_':
+            height = 0
+        else:
+            height = len(contents)
+        for lvl in range(height):
+            x[0,ix] = 1; x[1,colors.index(d_colors[contents[lvl]])] += 1
+    return torch.tensor(x.flatten()).float().to(device)
 
 
 def check_well_formedness(states):

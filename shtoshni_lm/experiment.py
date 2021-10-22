@@ -25,6 +25,10 @@ class Experiment(object):
 		super().__init__()
 		self.args = args
 
+		self.device = 'cpu'
+		if torch.cuda.is_available():
+			self.device = 'cuda'
+
 		# Whether to train or not
 		self.eval_model: bool = self.args.eval
 
@@ -69,7 +73,10 @@ class Experiment(object):
 		model_fp = 'facebook/bart-base'
 		self.tokenizer = BartTokenizerFast.from_pretrained(model_fp)
 
-		self.model = BartForConditionalGeneration.from_pretrained(model_fp).cuda()
+		self.model = BartForConditionalGeneration.from_pretrained(model_fp)
+
+		if torch.cuda.is_available():
+			self.model.cuda()
 
 		if self.args.use_state_loss:
 			PROBE_START = '[PROBE_START]'
@@ -160,11 +167,11 @@ class Experiment(object):
 			for j, (inputs, lang_tgts, state_tgts, raw_state_targets, init_states) in enumerate(
 					convert_to_transformer_batches(
 						self.dataset, self.tokenizer, self.args.batchsize, random=random, #include_init_state='NL',
-						domain="alchemy", device='cuda',
+						domain="alchemy", device=self.device,
 					)
 			):
 
-				def handle_example(inputs, lang_tgs, state_tgts):
+				def handle_example(inputs, lang_tgts, state_tgts):
 					state_loss = None
 					orig_return_dict = model(
 						input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
@@ -228,7 +235,7 @@ class Experiment(object):
 				convert_to_transformer_batches(
 					self.dev_dataset, self.tokenizer, self.args.batchsize, #include_init_state='NL',
 					domain="alchemy",
-					device='cuda',
+					device=self.device,
 				)
 		):
 			return_dict = model(input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],

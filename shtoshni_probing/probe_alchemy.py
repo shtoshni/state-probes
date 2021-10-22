@@ -34,21 +34,21 @@ from probe_models import (
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('--device', type=str, default='cuda')
-parser.add_argument('--lr', type=float, default=1e-4)
+parser.add_argument('--lr', type=float, default=1e-5)
 parser.add_argument('--control_input', action='store_true')
 parser.add_argument('--dropout', type=float, default=0.1)
-parser.add_argument('--batchsize', type=int, default=128)
-parser.add_argument('--eval_batchsize', type=int, default=1024)
+parser.add_argument('--batchsize', type=int, default=16)
+parser.add_argument('--eval_batchsize', type=int, default=128)
 parser.add_argument('--debug', action='store_true')
 parser.add_argument('--arch', type=str, default='bart', choices=['t5', 'bart', 'bert'])
-parser.add_argument('--encode_tgt_state', type=str, default='NL.bart', choices=[False, 'raw.mlp', 'NL.bart', 'NL.t5'], help="how to encode the state before probing")
+parser.add_argument('--encode_tgt_state', type=str, default=False, choices=[False, 'raw.mlp', 'NL.bart', 'NL.t5'], help="how to encode the state before probing")
 parser.add_argument('--tgt_agg_method', type=str, choices=['sum', 'avg', 'first', 'last', 'lin_attn', 'ffn_attn', 'self_attn'], default='avg', help="how to aggregate across tokens of target, if `encode_tgt_state` is set True")
-parser.add_argument('--probe_type', type=str, choices=['linear', 'mlp', 'lstm', 'decoder'], default='linear')
-parser.add_argument('--encode_init_state', type=str, default='NL', choices=[False, 'raw', 'NL'])
+# parser.add_argument('--probe_type', type=str, choices=['linear', 'mlp', 'lstm', 'decoder'], default='linear')
+parser.add_argument('--encode_init_state', type=str, default=False, choices=[False, 'raw', 'NL'])
 parser.add_argument('--seed', type=int, default=45)
 parser.add_argument('--no_context', action='store_true')
 parser.add_argument('--append_last_state_to_context', action='store_true')
-parser.add_argument('--nonsynthetic', default=True, action='store_true')
+parser.add_argument('--nonsynthetic', default=False, action='store_true')
 parser.add_argument('--epochs', type=int, default=20)
 parser.add_argument('--no_pretrain', action='store_true')
 parser.add_argument('--lm_save_path', type=str, default=None, help="load existing LM checkpoint (if any)")
@@ -57,14 +57,14 @@ parser.add_argument('--probe_save_path', type=str, default=None, help="load exis
 parser.add_argument('--probe_layer', type=int, default=-1, help="which layer of the model to probe")
 parser.add_argument('--probe_target', type=str, choices=['text'] + [f'{target}.{text_type}' for target, text_type in itertools.product([
     'state', 'init_state', 'single_beaker_init', 'single_beaker_final',
-], ['NL', 'raw'])], default="single_beaker_final.NL", help="what to probe for")
-parser.add_argument('--probe_agg_method', type=str, choices=[None, 'sum', 'avg', 'first', 'last', 'lin_attn', 'ffn_attn', 'self_attn'], default='avg', help="how to aggregate across tokens")
+], ['NL', 'raw'])], default="state.NL", help="what to probe for")
+parser.add_argument('--probe_agg_method', type=str, choices=[None, 'sum', 'avg', 'first', 'last', 'lin_attn', 'ffn_attn', 'self_attn'], default=None, help="how to aggregate across tokens")
 parser.add_argument('--probe_attn_dim', type=int, default=None, help="what dimensions to compress sequence tokens to")
 single_beaker_opts = ['single_beaker_init', 'single_beaker_init_color', 'single_beaker_final', 'single_beaker_all'] + [
     f'single_beaker_init_{att}'
     for att in ['amount', 'full', 'verb', 'article', 'end_punct', 'pos.R0', 'pos.R1', 'pos.R2', 'beaker.R0', 'beaker.R1', 'beaker.R2']
 ]
-parser.add_argument('--localizer_type', type=str, default='single_beaker_init_full',
+parser.add_argument('--localizer_type', type=str, default='all',
     choices=['all', 'init_state'] + single_beaker_opts + [f'{opt}.offset{i}' for opt in single_beaker_opts for i in range(7)] + [
         f'single_beaker_{occurrence}{token_offset}{offset}' for occurrence in ["init", "init_full"] for offset in [""] + [f".offset{i}" for i in range(7)] for token_offset in [""] + [f".R{j}" for j in range(-7, 8)]
     ],
@@ -77,7 +77,7 @@ BATCHSIZE = args.batchsize
 EVAL_BATCHSIZE = args.eval_batchsize
 arch = args.arch
 encode_tgt_state = args.encode_tgt_state
-probe_type = args.probe_type
+probe_type = "linear" # args.probe_type
 probe_layer = args.probe_layer
 encode_init_state = args.encode_init_state
 lm_save_path = args.lm_save_path
@@ -140,20 +140,14 @@ optimizer = AdamW(list(p for p in all_parameters if p.requires_grad), lr=lr)
 
 localizer = SconeLocalizer(getattr(probe_model, 'agg_layer', None), args.probe_agg_method, args.probe_attn_dim, args.localizer_type, args.probe_max_tokens, tokenizer, args.device)
 state_localizer = SconeLocalizer(getattr(probe_model, 'target_agg_layer', None), args.tgt_agg_method, args.probe_attn_dim, 'all', args.probe_max_tokens, tokenizer, args.device)
-if args.encode_tgt_state:
-    assert args.probe_type != 'decoder'
-    full_joint_model = ProbeLinearModel(
-        args.arch, getattr(probe_model, 'config', getattr(model, 'config', None)),
-        model, state_model, probe_model, args.probe_layer, args.probe_type,
-        localizer, state_localizer,
-    )
-else:
-    assert args.probe_type == 'decoder'
-    full_joint_model = ProbeConditionalGenerationModel(
-        args.arch, getattr(probe_model, 'config', getattr(model, 'config', None)),
-        model, state_model, probe_model, args.probe_layer, args.probe_type,
-        localizer, state_localizer,
-    )
+
+full_joint_model = ProbeLinearModel(
+    args.arch, getattr(probe_model, 'config', getattr(model, 'config', None)),
+    model, state_model, probe_model, args.probe_layer, args.probe_type,
+    localizer, state_localizer,
+)
+
+print(full_joint_model)
 
 # load data
 print("Loading data")
@@ -167,8 +161,7 @@ random.shuffle(all_dev_states)
 all_train_inps = [" ".join(inps) for inps, _, _ in [x for d in dataset for x in d.all_pairs()]]
 all_dev_inps = [" ".join(inps) for inps, _, _ in [x for d in dev_dataset for x in d.all_pairs()]]
 
-
-#dev loss
+# dev loss
 model.eval()
 probe_model.eval()
 if encode_tgt_state:
@@ -176,20 +169,16 @@ if encode_tgt_state:
     if state_model: state_model.eval()
     print("Getting vectors for all possible beaker states")
     with torch.no_grad():
-        if 'single_beaker_init' or 'single_beaker_final' in args.probe_target:
-            all_beaker_states, beaker_state_to_idx = gen_all_beaker_states("alchemy", args, encoding=encoding, tokenizer=tokenizer, device=args.device)
+        # if 'single_beaker_init' or 'single_beaker_final' in args.probe_target:
+        all_beaker_states, beaker_state_to_idx = gen_all_beaker_states("alchemy", args, encoding=encoding, tokenizer=tokenizer, device=args.device)
         # don't use agg here if you need to learn custom weights (i.e. using attn)
         # (otherwise have to re-encode each training step...)
-        probe_agg_method = args.probe_agg_method if args.probe_agg_method == 'sum' or args.probe_agg_method == 'avg' else None
-        if encoding == "NL":
-            all_state_input_ids, all_state_attn_mask, all_state_vectors, all_state_index = encode_target_states(
-                state_model, None, tokenizer, encode_init_state, probe_model, args, all_state_targets=all_beaker_states)
-        else:
-            # (numtotal,1,encodedim)
-            all_state_input_ids = torch.stack(all_beaker_states, dim=0).unsqueeze(1)
-            all_state_attn_mask = torch.ones(all_state_input_ids.size(0),1).to(args.device)
-            all_beaker_states = all_state_input_ids.tolist()
+        probe_agg_method = args.probe_agg_method
+        all_state_input_ids, all_state_attn_mask, all_state_vectors, all_state_index = encode_target_states(
+            state_model, None, tokenizer, encode_init_state, probe_model, args, all_state_targets=all_beaker_states)
+
         beaker_idx_to_state = {beaker_state_to_idx[state]: state for state in beaker_state_to_idx}
+
 print("Initial eval + save model preds")
 with torch.no_grad():
     probe_val_loss = 0
@@ -211,17 +200,17 @@ with torch.no_grad():
             '''
             probe_outs['raw_inputs'] = raw_state_targets
             probe_outs['all_states_input_ids'] = all_state_input_ids
-            if encoding == "NL":
-                probe_outs['all_states_attn_mask'] = all_state_attn_mask
-                # print(all_state_attn_mask.shape)
-                # print(torch.sum(all_state_attn_mask, dim=1))
-                # print(torch.max(torch.sum(all_state_attn_mask, dim=1)))
+            # if encoding == "NL":
+            probe_outs['all_states_attn_mask'] = all_state_attn_mask
+            # print(all_state_attn_mask.shape)
+            # print(torch.sum(all_state_attn_mask, dim=1))
+            # print(torch.max(torch.sum(all_state_attn_mask, dim=1)))
 
-                probe_outs['all_states_encoding'] = all_state_vectors
-            else:
-                # (numtotal,1,embeddim)
-                probe_outs['all_states_encoding'] = state_model(all_state_input_ids)
-                probe_outs['all_states_attn_mask'] = all_state_attn_mask
+            probe_outs['all_states_encoding'] = all_state_vectors
+            # else:
+            #     # (numtotal,1,embeddim)
+            #     probe_outs['all_states_encoding'] = state_model(all_state_input_ids)
+            #     probe_outs['all_states_attn_mask'] = all_state_attn_mask
             probe_outs['labels'] = get_matching_state_labels(all_beaker_states, beaker_state_to_idx, probe_outs, encode_tgt_state, tokenizer, device=args.device)
         model_outs = full_joint_model(inputs['input_ids'], inputs['attention_mask'], offset_mapping=inputs['offset_mapping'], probe_outs=probe_outs, localizer_key=inputs['state_key'])
         valid_loss = model_outs["loss"]
@@ -289,7 +278,6 @@ else:
     best_val_loss = probe_val_loss
 best_epoch = 0
 
-init_state_dict = deepcopy(full_joint_model.state_dict())
 
 # Training loops
 print("Begin training")
@@ -309,14 +297,15 @@ for i in range(args.epochs):
         if encode_tgt_state:
             probe_outs['raw_inputs'] = raw_state_targets
             probe_outs['all_states_input_ids'] = all_state_input_ids
-            if encoding == "NL":
-                probe_outs['all_states_attn_mask'] = all_state_attn_mask
-                probe_outs['all_states_encoding'] = all_state_vectors
-            else:
+            # if encoding == "NL":
+            probe_outs['all_states_attn_mask'] = all_state_attn_mask
+            probe_outs['all_states_encoding'] = all_state_vectors
+            # else:
                 # (numtotal,1,embeddim)
-                probe_outs['all_states_encoding'] = state_model(all_state_input_ids)
-                probe_outs['all_states_attn_mask'] = all_state_attn_mask
+                # probe_outs['all_states_encoding'] = state_model(all_state_input_ids)
+                # probe_outs['all_states_attn_mask'] = all_state_attn_mask
             probe_outs['labels'] = get_matching_state_labels(all_beaker_states, beaker_state_to_idx, probe_outs, encode_tgt_state, tokenizer, device=args.device)
+
         probe_loss = full_joint_model(inputs['input_ids'], inputs['attention_mask'], offset_mapping=inputs['offset_mapping'], probe_outs=probe_outs, localizer_key=inputs['state_key'])["loss"]
         probe_loss.backward()
         probe_train_losses.append(probe_loss)
