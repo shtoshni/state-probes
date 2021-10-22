@@ -162,7 +162,8 @@ dev_dataset, lang_v_dev, state_v_dev = loadData(split="dev", kind="alchemy", syn
 best_val_loss = 10**10
 best_epoch = -1
 # all_train_states = [" ".join(state) for _, _, state in [x for d in dataset for x in d.all_pairs()]]
-# all_dev_states = [" ".join(state) for _, _, state in [x for d in dev_dataset for x in d.all_pairs()]]
+all_dev_states = [" ".join(state) for _, _, state in [x for d in dev_dataset for x in d.all_pairs()]]
+# print(len(all_dev_states))
 # random.shuffle(all_dev_states)
 # all_train_inps = [" ".join(inps) for inps, _, _ in [x for d in dataset for x in d.all_pairs()]]
 # all_dev_inps = [" ".join(inps) for inps, _, _ in [x for d in dev_dataset for x in d.all_pairs()]]
@@ -340,35 +341,35 @@ for i in range(args.epochs):
             append_last_state_to_context=args.append_last_state_to_context, domain="alchemy", state_targets_type=probe_target,
             device=args.device, control_input=args.control_input,
         ))):
-            if encode_tgt_state:
-                probe_outs['raw_inputs'] = raw_state_targets
-                probe_outs['all_states_input_ids'] = all_state_input_ids
-                if encoding == "NL":
-                    probe_outs['all_states_attn_mask'] = all_state_attn_mask
-                    probe_outs['all_states_encoding'] = all_state_vectors
-                else:
-                    # (numtotal,1,embeddim)
-                    probe_outs['all_states_encoding'] = state_model(all_state_input_ids)
-                    probe_outs['all_states_attn_mask'] = all_state_attn_mask
-                probe_outs['labels'] = get_matching_state_labels(all_beaker_states, beaker_state_to_idx, probe_outs, tokenizer, device=args.device)
+            # if encode_tgt_state:
+            probe_outs['raw_inputs'] = raw_state_targets
+            probe_outs['all_states_input_ids'] = all_state_input_ids
+                # if encoding == "NL":
+            probe_outs['all_states_attn_mask'] = all_state_attn_mask
+            probe_outs['all_states_encoding'] = all_state_vectors
+                # else:
+                #     # (numtotal,1,embeddim)
+                #     probe_outs['all_states_encoding'] = state_model(all_state_input_ids)
+                #     probe_outs['all_states_attn_mask'] = all_state_attn_mask
+            probe_outs['labels'] = get_matching_state_labels(all_beaker_states, beaker_state_to_idx, probe_outs, tokenizer, device=args.device)
 
             model_outs = full_joint_model(inputs['input_ids'], inputs['attention_mask'], offset_mapping=inputs['offset_mapping'], probe_outs=probe_outs, localizer_key=inputs['state_key'])
             valid_loss = model_outs["loss"]
             probe_val_loss += valid_loss*len(inputs['input_ids'])
             n_val += len(inputs['input_ids'])
             print(n_val)
-            if not encode_tgt_state:
-                model_outs = ModelOutput(last_hidden_state=model_outs.last_hidden_state)
-                generated_ws = full_joint_model.generate(
-                    input_ids=inputs['input_ids'], encoder_outputs=model_outs, max_length=128, decoder_start_token_id=probe_model.config.pad_token_id, no_repeat_ngram_size=0)
-                for k in range(len(generated_ws)):
-                    genState = tokenizer.decode(generated_ws[k], skip_special_tokens=True)
-                    gtState = tokenizer.decode(probe_outs['input_ids'][k], skip_special_tokens=True)
-                    n_exact_state_match += int(genState == gtState)
-                    n_ratio_state_match += similarity_fn(genState, gtState, "alchemy")
-            else:
-                similarity_scores = model_outs["similarity"]
-                n_exact_state_match += int((similarity_scores.argmax(-1) == probe_outs['labels']).sum())
+            # if not encode_tgt_state:
+            #     model_outs = ModelOutput(last_hidden_state=model_outs.last_hidden_state)
+            #     generated_ws = full_joint_model.generate(
+            #         input_ids=inputs['input_ids'], encoder_outputs=model_outs, max_length=128, decoder_start_token_id=probe_model.config.pad_token_id, no_repeat_ngram_size=0)
+            #     for k in range(len(generated_ws)):
+            #         genState = tokenizer.decode(generated_ws[k], skip_special_tokens=True)
+            #         gtState = tokenizer.decode(probe_outs['input_ids'][k], skip_special_tokens=True)
+            #         n_exact_state_match += int(genState == gtState)
+            #         n_ratio_state_match += similarity_fn(genState, gtState, "alchemy")
+            # else:
+            similarity_scores = model_outs["similarity"]
+            n_exact_state_match += int((similarity_scores.argmax(-1) == probe_outs['labels']).sum())
         print("n_val", n_val)
         avg_probe_val_loss = probe_val_loss.item()/n_val
         if not encode_tgt_state:
