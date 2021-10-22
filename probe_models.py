@@ -39,7 +39,8 @@ def get_lang_model(arch, lm_save_path, pretrained=True, local_files_only=False, 
 
     if lm_save_path:
         print(f"Loading model from {lm_save_path}")
-        model_dict = torch.load(lm_save_path, map_location=torch.device('cpu'))
+        model_dict = torch.load(lm_save_path, map_location=torch.device('cpu'))['model']
+        print(model_dict.keys())
 
     if n_layers is not None:
         assert not pretrained
