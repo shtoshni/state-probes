@@ -90,7 +90,7 @@ class Experiment(object):
 		# loading data
 		self.dataset, lang_v, state_v = loadData(split="train", kind="alchemy", synthetic=False)
 		# TODO (Remove this)
-		self.dataset = self.dataset[:2000]
+		# self.dataset = self.dataset[:2000]
 		self.dev_dataset, lang_v_dev, state_v_dev = loadData(split="dev", kind="alchemy", synthetic=False)
 		self.all_train_states = [" ".join(state) for _, _, state in [x for d in self.dataset for x in d.all_pairs()]]
 		self.all_dev_states = [" ".join(state) for _, _, state in [x for d in self.dev_dataset for x in d.all_pairs()]]
