@@ -161,11 +161,11 @@ dataset, lang_v, state_v = loadData(split="train", kind="alchemy", synthetic=(no
 dev_dataset, lang_v_dev, state_v_dev = loadData(split="dev", kind="alchemy", synthetic=(not args.nonsynthetic))
 best_val_loss = 10**10
 best_epoch = -1
-all_train_states = [" ".join(state) for _, _, state in [x for d in dataset for x in d.all_pairs()]]
-all_dev_states = [" ".join(state) for _, _, state in [x for d in dev_dataset for x in d.all_pairs()]]
-random.shuffle(all_dev_states)
-all_train_inps = [" ".join(inps) for inps, _, _ in [x for d in dataset for x in d.all_pairs()]]
-all_dev_inps = [" ".join(inps) for inps, _, _ in [x for d in dev_dataset for x in d.all_pairs()]]
+# all_train_states = [" ".join(state) for _, _, state in [x for d in dataset for x in d.all_pairs()]]
+# all_dev_states = [" ".join(state) for _, _, state in [x for d in dev_dataset for x in d.all_pairs()]]
+# random.shuffle(all_dev_states)
+# all_train_inps = [" ".join(inps) for inps, _, _ in [x for d in dataset for x in d.all_pairs()]]
+# all_dev_inps = [" ".join(inps) for inps, _, _ in [x for d in dev_dataset for x in d.all_pairs()]]
 
 
 #dev loss
