@@ -252,9 +252,12 @@ class Experiment(object):
 		if avg_val_loss <= self.train_info['best_val_loss']:
 			print("NEW BEST MODEL")
 			self.train_info['best_val_loss'] = avg_val_loss
+			self.train_info['num_stuck_evals'] = 0
 			self.save_model(self.args.best_model_path, last_checkpoint=False)
+		else:
+			self.train_info['num_stuck_evals'] += 1
 
-		self.save_model(self.args.best_model_path, last_checkpoint=True)
+		self.save_model(self.args.model_path, last_checkpoint=True)
 		return avg_val_loss
 
 	def load_model(self, location: str, last_checkpoint=True) -> None:

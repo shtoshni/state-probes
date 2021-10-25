@@ -16,19 +16,22 @@ def main():
     parser.add_argument('--patience', type=int, default=2)
     parser.add_argument('--use_state_loss', default=False, action="store_true")
     parser.add_argument('--rap_prob', default=0.25, type=float)
-    parser.add_argument('--model_dir', type=str, default='sconeModels')
+    parser.add_argument('--base_model_dir', type=str, default='models')
     args = parser.parse_args()
 
-    # make save path
+    model_dir_str = "epochs_" + str(args.epochs)
+    model_dir_str += "_patience_" + str(args.patience)
 
     if args.use_state_loss:
-        args.model_dir += "_state"
-        args.model_dir += f"_{args.rap_prob}"
+        model_dir_str += "_state"
+        model_dir_str += f"_{args.rap_prob}"
+
+    args.model_dir = path.join(args.base_model_dir, model_dir_str)
+    args.best_model_dir = path.join(args.model_dir, "best")
 
     if not path.exists(args.model_dir):
         os.makedirs(args.model_dir)
 
-    args.best_model_dir = path.join(args.model_dir, "best")
     if not path.exists(args.best_model_dir):
         os.makedirs(args.best_model_dir)
 
