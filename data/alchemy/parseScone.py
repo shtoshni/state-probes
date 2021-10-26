@@ -1,4 +1,5 @@
 # from https://worksheets.codalab.org/worksheets/0xad3fc9f52f514e849b282a105b1e3f02
+import os
 
 
 class SceneDataset:
@@ -84,12 +85,15 @@ def get_state_vocab(dataset):
                 vocab.add(word)
     return vocab
 
-def loadData(kind='scene', split="train", synthetic=False):
-    if synthetic: return loadSyntheticData(kind=kind, split=split)
-    path = f"rlong/{kind}-{split}.tsv"  
+def loadData(kind='scene', split="train", synthetic=False, base_dir=None):
+    if synthetic:
+        return loadSyntheticData(kind=kind, split=split)
+    if base_dir is None:
+        path = f"rlong/{kind}-{split}.tsv"
+    else:
+        path = os.path.join(base_dir, f"rlong/{kind}-{split}.tsv")
 
     dataset = []
-
     with open(path, 'r') as f:
         for ln in f:
             dataset.append(Datum(ln, kind=kind))

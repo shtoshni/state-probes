@@ -29,11 +29,7 @@ echo "PYTHONPATH: $PYTHONPATH"
 echo "--------------------"
 
 echo "Starting experiment."
-if [ -z "$SLURM_JOB_NAME" ];
-then
-    python ${base_dir%/}/main.py ${args}
-else
-    python ${base_dir%/}/main.py ${args}
-fi
+
+python ${base_dir%/}/main.py ${args} --base_model_dir ~/research/state-probes/models/ --base_dir ~/research/state-probes/
 
 conda deactivate

@@ -18,6 +18,7 @@ def main():
     parser.add_argument('--rap_prob', default=0.25, type=float)
     parser.add_argument('--add_state', choices=['all', 'targeted', 'random'], type=str, default='targeted')
     parser.add_argument('--base_model_dir', type=str, default='models')
+    parser.add_argument('--base_dir', type=str, default=None)
     args = parser.parse_args()
 
     model_dir_str = "epochs_" + str(args.epochs)

@@ -87,16 +87,15 @@ class Experiment(object):
 			self.model.resize_token_embeddings(len(self.tokenizer))
 
 			self.probing_tokens_mask = [0.0] * (len(self.tokenizer) - 2) + [1.0, 1.0]
-			# probing_tokens_mask.append(1.0)
-			# probing_tokens_mask.append(1.0)
-
 
 	def _load_data(self):
 		# loading data
-		self.dataset, lang_v, state_v = loadData(split="train", kind="alchemy", synthetic=False)
+		self.dataset, lang_v, state_v = loadData(
+			split="train", kind="alchemy", synthetic=False, base_dir=self.args.base_dir)
 		# TODO (Remove this)
 		# self.dataset = self.dataset[:2000]
-		self.dev_dataset, lang_v_dev, state_v_dev = loadData(split="dev", kind="alchemy", synthetic=False)
+		self.dev_dataset, lang_v_dev, state_v_dev = loadData(
+			split="dev", kind="alchemy", synthetic=False, base_dir=self.args.base_dir)
 		self.all_train_states = [" ".join(state) for _, _, state in [x for d in self.dataset for x in d.all_pairs()]]
 		self.all_dev_states = [" ".join(state) for _, _, state in [x for d in self.dev_dataset for x in d.all_pairs()]]
 
