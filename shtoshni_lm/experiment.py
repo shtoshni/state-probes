@@ -86,6 +86,11 @@ class Experiment(object):
 			})
 			self.model.resize_token_embeddings(len(self.tokenizer))
 
+			self.probing_tokens_mask = [0.0] * (len(self.tokenizer) - 2) + [1.0, 1.0]
+			# probing_tokens_mask.append(1.0)
+			# probing_tokens_mask.append(1.0)
+
+
 	def _load_data(self):
 		# loading data
 		self.dataset, lang_v, state_v = loadData(split="train", kind="alchemy", synthetic=False)
@@ -166,8 +171,8 @@ class Experiment(object):
 
 			for j, (inputs, lang_tgts, state_tgts, raw_state_targets, init_states) in enumerate(
 					convert_to_transformer_batches(
-						self.dataset, self.tokenizer, self.args.batchsize, random=random, #include_init_state='NL',
-						domain="alchemy", device=self.device,
+						self.dataset, self.tokenizer, self.args.batchsize, random=random,
+						domain="alchemy", device=self.device, add_state=self.args.add_state,
 					)
 			):
 
@@ -201,9 +206,6 @@ class Experiment(object):
 
 			self.train_info['num_epochs'] += 1
 			logger.info(f"epoch {self.train_info['num_epochs']}, avg lang loss {sum(lang_train_losses) / len(lang_train_losses)}")
-			# if len(state_losses):
-			# 	logger.info(
-			# 		f"epoch {self.train_info['num_epochs']}, avg state loss {sum(state_losses) / len(state_losses)}")
 			dev_loss = self.periodic_model_eval()
 			# Get elapsed time
 			elapsed_time = time.time() - start_time
@@ -225,24 +227,33 @@ class Experiment(object):
 		tot_val_loss = 0
 		for j, (inputs, lang_tgts, state_tgts, raw_state_targets, init_states) in enumerate(
 				convert_to_transformer_batches(
-					self.dev_dataset, self.tokenizer, self.args.batchsize, #include_init_state='NL',
-					domain="alchemy",
-					device=self.device,
+					self.dev_dataset, self.tokenizer, self.args.batchsize,
+					domain="alchemy", device=self.device, add_state=self.args.add_state,
 				)
 		):
 			return_dict = model(input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
 								labels=lang_tgts['input_ids'], return_dict=True)
-			lang_loss, dec_output, encoder_hidden = return_dict.loss, return_dict.logits, return_dict.encoder_last_hidden_state
 
-			tot_val_loss += lang_loss * len(inputs['input_ids'])
+			if self.args.use_state_loss:
+				loss_fct = torch.nn.CrossEntropyLoss()
+				lm_logits = return_dict.logits
+				lm_logits = lm_logits.view(-1, len(self.tokenizer))
+
+				logit_mask = torch.tensor(self.probing_tokens_mask, dtype=torch.float32, device=inputs['input_ids'].device)
+				lm_logits = lm_logits * (1 - logit_mask) + logit_mask * (-1e10)
+				lang_loss = loss_fct(lm_logits, lang_tgts['input_ids'].view(-1))
+			else:
+				lang_loss = return_dict.loss
+
+			tot_val_loss += lang_loss.item() * len(inputs['input_ids'])
 			n_val += len(inputs['input_ids'])
 
-		print("n_val", n_val)
-		avg_val_loss = tot_val_loss.item() / n_val
-		print(f"epoch {self.train_info['num_epochs']}, avg val loss: {avg_val_loss}")
+		logger.info(f"n_val: {n_val}")
+		avg_val_loss = tot_val_loss / n_val
+		logger.info(f"epoch {self.train_info['num_epochs']}, avg val loss: {avg_val_loss}")
 
 		if avg_val_loss <= self.train_info['best_val_loss']:
-			print("NEW BEST MODEL")
+			logger.info("NEW BEST MODEL")
 			self.train_info['best_val_loss'] = avg_val_loss
 			self.train_info['num_stuck_evals'] = 0
 			self.save_model(self.args.best_model_path, last_checkpoint=False)
@@ -300,5 +311,4 @@ class Experiment(object):
 
 		torch.save(save_dict, location)
 		logging.info(f"Model saved at: {location}")
-
 
