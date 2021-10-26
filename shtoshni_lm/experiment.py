@@ -161,7 +161,7 @@ class Experiment(object):
 		while True:
 			logger.info("Steps done %d" % (self.train_info['global_steps']))
 			lang_train_losses = []
-			state_losses = []
+			# state_losses = []
 			model.train()
 
 			for j, (inputs, lang_tgts, state_tgts, raw_state_targets, init_states) in enumerate(
@@ -172,46 +172,38 @@ class Experiment(object):
 			):
 
 				def handle_example(inputs, lang_tgts, state_tgts):
-					state_loss = None
-					orig_return_dict = model(
-						input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
-						labels=lang_tgts['input_ids'], return_dict=True,
-					)
+					if self.args.use_state_loss and random.random() <= self.args.rap_prob:
+						return_dict = model(
+							input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
+							labels=state_tgts['input_ids'], return_dict=True,
+						)
+					else:
+						return_dict = model(
+							input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
+							labels=lang_tgts['input_ids'], return_dict=True,
+						)
 
-					lang_loss = orig_return_dict.loss
-					total_loss = lang_loss
-
-					if self.args.use_state_loss:
-						if random.random() <= self.args.rap_prob:
-							state_return_dict = model(
-								input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
-								labels=state_tgts['input_ids'], return_dict=True,
-							)
-							state_loss = state_return_dict.loss
-							total_loss += state_loss
-							state_losses.append(state_loss.item())
+					lang_loss: torch.Tensor = return_dict.loss
 
 					self.train_info['global_steps'] += 1
 					optimizer.zero_grad()
-					total_loss.backward()
+					lang_loss.backward()
 
 					optimizer.step()
 					lang_train_losses.append(lang_loss.item())
 
-					return state_loss, lang_loss, total_loss
+					return lang_loss.item()
 
-				state_loss, lang_loss, total_loss = handle_example(inputs, lang_tgts, state_tgts)
+				lang_loss = handle_example(inputs, lang_tgts, state_tgts)
 				if j % 100 == 0:
-					output_str = f"epoch {self.train_info['num_epochs']}, batch {j}, lang score: {lang_loss.item(): .3f}"
-					if state_loss:
-						output_str += f" state loss: {state_loss.item(): .3f}"
+					output_str = f"epoch {self.train_info['num_epochs']}, batch {j}, lang score: {lang_loss: .3f}"
 					logger.info(output_str)
 
 			self.train_info['num_epochs'] += 1
 			logger.info(f"epoch {self.train_info['num_epochs']}, avg lang loss {sum(lang_train_losses) / len(lang_train_losses)}")
-			if len(state_losses):
-				logger.info(
-					f"epoch {self.train_info['num_epochs']}, avg state loss {sum(state_losses) / len(state_losses)}")
+			# if len(state_losses):
+			# 	logger.info(
+			# 		f"epoch {self.train_info['num_epochs']}, avg state loss {sum(state_losses) / len(state_losses)}")
 			dev_loss = self.periodic_model_eval()
 			# Get elapsed time
 			elapsed_time = time.time() - start_time

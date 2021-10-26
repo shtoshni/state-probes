@@ -371,6 +371,7 @@ for i in range(args.epochs):
             similarity_scores = model_outs["similarity"]
             n_exact_state_match += int((similarity_scores.argmax(-1) == probe_outs['labels']).sum())
         print("n_val", n_val)
+
         avg_probe_val_loss = probe_val_loss.item()/n_val
         if not encode_tgt_state:
             decoder_metrics = f", fraction {probe_target} match: {n_ratio_state_match/n_val}, percent exact match: {n_exact_state_match/n_val}"

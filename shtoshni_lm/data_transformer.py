@@ -3,14 +3,23 @@ from data.alchemy.utils import int_to_word, decide_translate, translate_states_t
 from data.alchemy.parseScone import getBatchesWithInit
 from transformers import BartTokenizerFast, T5TokenizerFast
 
+from data.alchemy.utils import int_to_word
+
 PROBE_START = '[PROBE_START]'
 PROBE_END = '[PROBE_END]'
 
 
+def identify_beaker_idx(lang_target):
+    for bucket_idx in range(len(int_to_word)):
+        if int_to_word[bucket_idx] in lang_target:
+            return bucket_idx
+    else:
+        return -1
+
 def convert_to_transformer_batches(
     dataset, tokenizer, batchsize, random=None,
-    no_context=False, domain="alchemy",
-    state_targets_type="state.NL", device='cuda', control_input=False,
+    domain="alchemy",
+    state_targets_type="state.NL", device='cuda', add_state='random',
 ):
     """
     state_targets_type (str): what to return for `state_tgt_enc` and `state_targets`
@@ -84,12 +93,23 @@ def convert_to_transformer_batches(
             state_tgt_enc = None
             if random:
                 target_list = []
-                for state_target in state_targets[state_key]:
-                    state_slice = random.choice(state_target.split(","))
-                    target_list.append(PROBE_START + " " + state_slice + " " + PROBE_END)
+                for (state_target, lang_target) in zip(state_targets[state_key], lang_targets):
+                    if add_state == 'all':
+                        state_slice = state_target
+                    elif add_state == 'targeted':
+                        beaker_idx = identify_beaker_idx(lang_target)
+                        if beaker_idx == -1:
+                            state_slice = random.choice(state_target.split(","))
+                        else:
+                            state_slice = state_target.split(",")[beaker_idx]
+                    elif add_state == 'random':
+                        state_slice = random.choice(state_target.split(","))
+                    else:
+                        raise ValueError(add_state)
+                    target_list.append(PROBE_START + " " + state_slice + " " + PROBE_END + " " + lang_target)
 
                 state_tgt_enc = tokenizer(
-                    target_list, return_tensors='pt', padding=True, truncation=True, add_special_tokens=False).to(device)
+                    target_list, return_tensors='pt', padding=True, truncation=True).to(device)
                 # print(state_tgt_enc)
                 # print(tokenizer.batch_decode(state_tgt_enc['input_ids']))
                 state_tgt_enc['key'] = state_key

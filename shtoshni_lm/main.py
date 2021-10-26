@@ -16,6 +16,7 @@ def main():
     parser.add_argument('--patience', type=int, default=2)
     parser.add_argument('--use_state_loss', default=False, action="store_true")
     parser.add_argument('--rap_prob', default=0.25, type=float)
+    parser.add_argument('--add_state', choices=['all', 'targeted', 'random'], type=str, default='targeted')
     parser.add_argument('--base_model_dir', type=str, default='models')
     args = parser.parse_args()
 
@@ -25,6 +26,7 @@ def main():
     if args.use_state_loss:
         model_dir_str += "_state"
         model_dir_str += f"_{args.rap_prob}"
+        model_dir_str += f"_{args.add_state}"
 
     args.model_dir = path.join(args.base_model_dir, model_dir_str)
     args.best_model_dir = path.join(args.model_dir, "best")
