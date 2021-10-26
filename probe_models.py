@@ -64,6 +64,7 @@ def get_lang_model(arch, lm_save_path, pretrained=True, local_files_only=False, 
                     'additional_special_tokens': [PROBE_START, PROBE_END]
                 })
                 model.resize_token_embeddings(len(tokenizer))
+                model.load_state_dict(model_dict)
 
     encoder = model.get_encoder()
     for p in model.parameters():
