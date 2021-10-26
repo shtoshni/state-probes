@@ -37,11 +37,6 @@ def get_lang_model(arch, lm_save_path, pretrained=True, local_files_only=False, 
     else:
         raise NotImplementedError()
 
-    if lm_save_path:
-        print(f"Loading model from {lm_save_path}")
-        model_dict = torch.load(lm_save_path, map_location=torch.device('cpu'))['model']
-        # print(model_dict.keys())
-
     if n_layers is not None:
         assert not pretrained
     if not lm_save_path and pretrained:
@@ -57,7 +52,19 @@ def get_lang_model(arch, lm_save_path, pretrained=True, local_files_only=False, 
                 setattr(config, 'num_layers', n_layers)
                 setattr(config, 'num_decoder_layers', n_layers)
         model = model_class(config)
-        if lm_save_path: model.load_state_dict(model_dict)
+        if lm_save_path:
+            print(f"Loading model from {lm_save_path}")
+            model_dict = torch.load(lm_save_path, map_location=torch.device('cpu'))['model']
+            try:
+                model.load_state_dict(model_dict)
+            except RuntimeError:
+                PROBE_START = '[PROBE_START]'
+                PROBE_END = '[PROBE_END]'
+                tokenizer.add_special_tokens({
+                    'additional_special_tokens': [PROBE_START, PROBE_END]
+                })
+                model.resize_token_embeddings(len(tokenizer))
+
     encoder = model.get_encoder()
     for p in model.parameters():
         p.requires_grad = False

@@ -63,7 +63,7 @@ class Experiment(object):
 		elif path.exists(self.model_path):
 			logger.info("Couldn't find the best model! Using the last checkpoint!")
 			self.load_model(self.model_path, last_checkpoint=True)
-			self.periodic_model_eval()
+			self.final_eval()
 		else:
 			logger.info("No model accessible!")
 			sys.exit(1)
@@ -260,6 +260,41 @@ class Experiment(object):
 			self.train_info['num_stuck_evals'] += 1
 
 		self.save_model(self.args.model_path, last_checkpoint=True)
+		return avg_val_loss
+
+	@torch.no_grad()
+	def final_eval(self):
+		model = self.model
+		model.eval()
+		n_val = 0
+		tot_val_loss = 0
+		for j, (inputs, lang_tgts, state_tgts, raw_state_targets, init_states) in enumerate(
+				convert_to_transformer_batches(
+					self.dev_dataset, self.tokenizer, self.args.batchsize,
+					domain="alchemy", device=self.device, add_state=self.args.add_state,
+				)
+		):
+			return_dict = model(input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
+								labels=lang_tgts['input_ids'], return_dict=True)
+
+			if self.args.use_state_loss:
+				loss_fct = torch.nn.CrossEntropyLoss()
+				lm_logits = return_dict.logits
+				lm_logits = lm_logits.view(-1, len(self.tokenizer))
+
+				logit_mask = torch.tensor(self.probing_tokens_mask, dtype=torch.float32,
+										  device=inputs['input_ids'].device)
+				lm_logits = lm_logits * (1 - logit_mask) + logit_mask * (-1e10)
+				lang_loss = loss_fct(lm_logits, lang_tgts['input_ids'].view(-1))
+			else:
+				lang_loss = return_dict.loss
+
+			tot_val_loss += lang_loss.item() * len(inputs['input_ids'])
+			n_val += len(inputs['input_ids'])
+
+		logger.info(f"n_val: {n_val}")
+		avg_val_loss = tot_val_loss / n_val
+		logger.info(f"epoch {self.train_info['num_epochs']}, avg val loss: {avg_val_loss}")
 		return avg_val_loss
 
 	def load_model(self, location: str, last_checkpoint=True) -> None:
