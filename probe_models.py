@@ -28,12 +28,14 @@ def get_lang_model(arch, lm_save_path, pretrained=True, local_files_only=False, 
         model_class = BartForConditionalGeneration
         config_class = BartConfig
         model_fp = 'facebook/bart-base'
-        tokenizer = BartTokenizerFast.from_pretrained(model_fp, local_files_only=local_files_only)
+        tokenizer_class = BartTokenizerFast
+        tokenizer = tokenizer_class.from_pretrained(model_fp, local_files_only=local_files_only)
     elif arch == 't5':
         model_class = T5ForConditionalGeneration
         config_class = T5Config
         model_fp = 't5-base'
-        tokenizer = T5TokenizerFast.from_pretrained(model_fp, local_files_only=local_files_only)
+        tokenizer_class = T5TokenizerFast
+        tokenizer = tokenizer_class.from_pretrained(model_fp, local_files_only=local_files_only)
     else:
         raise NotImplementedError()
 
@@ -54,17 +56,8 @@ def get_lang_model(arch, lm_save_path, pretrained=True, local_files_only=False, 
         model = model_class(config)
         if lm_save_path:
             print(f"Loading model from {lm_save_path}")
-            model_dict = torch.load(lm_save_path, map_location=torch.device('cpu'))['model']
-            try:
-                model.load_state_dict(model_dict)
-            except RuntimeError:
-                PROBE_START = '[PROBE_START]'
-                PROBE_END = '[PROBE_END]'
-                tokenizer.add_special_tokens({
-                    'additional_special_tokens': [PROBE_START, PROBE_END]
-                })
-                model.resize_token_embeddings(len(tokenizer))
-                model.load_state_dict(model_dict)
+            model = model_class.from_pretrained(lm_save_path)
+            tokenizer = tokenizer_class.from_pretrained(lm_save_path)
 
     encoder = model.get_encoder()
     for p in model.parameters():
