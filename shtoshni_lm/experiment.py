@@ -177,6 +177,7 @@ class Experiment(object):
 
 				def handle_example(inputs, lang_tgts, state_tgts):
 					if self.args.use_state_loss and random.random() <= self.args.rap_prob:
+						# print(self.tokenizer.batch_decode(state_tgts['input_ids'])[0])
 						return_dict = model(
 							input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
 							labels=state_tgts['input_ids'], return_dict=True,
