@@ -13,10 +13,11 @@ if not path.isdir(out_dir):
 out_file = path.join(out_dir, 'commands.txt')
 base_dir = "/share/data/speech/shtoshni/research/state-probes"
 
-fixed = ['--epochs 20 --patience 5 --use_state_loss']
+fixed = ['--epochs 25 --patience 5 --use_state_loss']
 state = ['--add_state ' + state_type for state_type in ['all', 'random']]
-rap_prob = [f'--rap_prob {rap_prob}' for rap_prob in [0.1, 0.25, 0.5, 1.0]]
+rap_prob = [f'--rap_prob {rap_prob}' for rap_prob in [0.1, 0.25, 0.5]]
 common_options = [fixed, state, rap_prob]
+
 
 with open(out_file, 'w') as out_f:
     # print(mem_type)
@@ -29,6 +30,10 @@ with open(out_file, 'w') as out_f:
 
         cur_command = cur_command.strip()
         out_f.write(cur_command + '\n')
+
+    vanilla_comb = '{}/slurm_scripts/lm/run.sh '.format(base_dir) + ' --epochs 25 --patience 5'
+    out_f.write(vanilla_comb + '\n')
+
 
 subprocess.call(
     "cd {}; python ~/slurm_batch.py {} -J {}".format(out_dir, out_file, JOB_NAME), shell=True)
