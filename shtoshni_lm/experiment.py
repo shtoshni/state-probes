@@ -280,15 +280,15 @@ class Experiment(object):
 				)
 		):
 			return_dict = model(input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
-								labels=lang_tgts['input_ids'], return_dict=True)
+			                    labels=lang_tgts['input_ids'], return_dict=True)
 
 			if self.args.use_state_loss:
 				loss_fct = torch.nn.CrossEntropyLoss()
 				lm_logits = return_dict.logits
 				lm_logits = lm_logits.view(-1, len(self.tokenizer))
 
-				logit_mask = torch.tensor(self.probing_tokens_mask, dtype=torch.float32,
-										  device=inputs['input_ids'].device)
+				logit_mask = torch.tensor(
+					self.probing_tokens_mask, dtype=torch.float32, device=inputs['input_ids'].device)
 				lm_logits = lm_logits * (1 - logit_mask) + logit_mask * (-1e10)
 				lang_loss = loss_fct(lm_logits, lang_tgts['input_ids'].view(-1))
 			else:
