@@ -73,6 +73,9 @@ parser.add_argument('--probe_max_tokens', type=int, default=None, help="how many
 parser.add_argument('--eval_only', action='store_true')
 args = parser.parse_args()
 
+if not torch.cuda.is_available():
+    args.device = 'cpu'
+
 BATCHSIZE = args.batchsize
 EVAL_BATCHSIZE = args.eval_batchsize
 arch = args.arch
@@ -140,20 +143,20 @@ optimizer = AdamW(list(p for p in all_parameters if p.requires_grad), lr=lr)
 
 localizer = SconeLocalizer(getattr(probe_model, 'agg_layer', None), args.probe_agg_method, args.probe_attn_dim, args.localizer_type, args.probe_max_tokens, tokenizer, args.device)
 state_localizer = SconeLocalizer(getattr(probe_model, 'target_agg_layer', None), args.tgt_agg_method, args.probe_attn_dim, 'all', args.probe_max_tokens, tokenizer, args.device)
-if args.encode_tgt_state:
-    assert args.probe_type != 'decoder'
-    full_joint_model = ProbeLinearModel(
-        args.arch, getattr(probe_model, 'config', getattr(model, 'config', None)),
-        model, state_model, probe_model, args.probe_layer, args.probe_type,
-        localizer, state_localizer,
-    )
-else:
-    assert args.probe_type == 'decoder'
-    full_joint_model = ProbeConditionalGenerationModel(
-        args.arch, getattr(probe_model, 'config', getattr(model, 'config', None)),
-        model, state_model, probe_model, args.probe_layer, args.probe_type,
-        localizer, state_localizer,
-    )
+# if args.encode_tgt_state:
+#     assert args.probe_type != 'decoder'
+full_joint_model = ProbeLinearModel(
+    args.arch, getattr(probe_model, 'config', getattr(model, 'config', None)),
+    model, state_model, probe_model, args.probe_layer, args.probe_type,
+    localizer, state_localizer,
+)
+# else:
+#     assert args.probe_type == 'decoder'
+#     full_joint_model = ProbeConditionalGenerationModel(
+#         args.arch, getattr(probe_model, 'config', getattr(model, 'config', None)),
+#         model, state_model, probe_model, args.probe_layer, args.probe_type,
+#         localizer, state_localizer,
+#     )
 
 # load data
 print("Loading data")
@@ -177,8 +180,8 @@ if encode_tgt_state:
     if state_model: state_model.eval()
     print("Getting vectors for all possible beaker states")
     with torch.no_grad():
-        if 'single_beaker_init' or 'single_beaker_final' in args.probe_target:
-            all_beaker_states, beaker_state_to_idx = gen_all_beaker_states("alchemy", args, encoding=encoding, tokenizer=tokenizer, device=args.device)
+        # if 'single_beaker_init' or 'single_beaker_final' in args.probe_target:
+        all_beaker_states, beaker_state_to_idx = gen_all_beaker_states("alchemy", args, encoding=encoding, tokenizer=tokenizer, device=args.device)
         # don't use agg here if you need to learn custom weights (i.e. using attn)
         # (otherwise have to re-encode each training step...)
         probe_agg_method = args.probe_agg_method if args.probe_agg_method == 'sum' or args.probe_agg_method == 'avg' else None
@@ -206,24 +209,24 @@ with torch.no_grad():
         append_last_state_to_context=args.append_last_state_to_context, domain="alchemy", state_targets_type=probe_target,
         device=args.device, control_input=args.control_input,
     ))):
-        if encode_tgt_state:
-            '''
-            encode_target_states implicitly created targets
-            '''
-            probe_outs['raw_inputs'] = raw_state_targets
-            probe_outs['all_states_input_ids'] = all_state_input_ids
-            if encoding == "NL":
-                probe_outs['all_states_attn_mask'] = all_state_attn_mask
-                # print(all_state_attn_mask.shape)
-                # print(torch.sum(all_state_attn_mask, dim=1))
-                # print(torch.max(torch.sum(all_state_attn_mask, dim=1)))
+        # if encode_tgt_state:
+        '''
+        encode_target_states implicitly created targets
+        '''
+        probe_outs['raw_inputs'] = raw_state_targets
+        probe_outs['all_states_input_ids'] = all_state_input_ids
+        # if encoding == "NL":
+        probe_outs['all_states_attn_mask'] = all_state_attn_mask
+        # print(all_state_attn_mask.shape)
+        # print(torch.sum(all_state_attn_mask, dim=1))
+        # print(torch.max(torch.sum(all_state_attn_mask, dim=1)))
 
-                probe_outs['all_states_encoding'] = all_state_vectors
-            else:
-                # (numtotal,1,embeddim)
-                probe_outs['all_states_encoding'] = state_model(all_state_input_ids)
-                probe_outs['all_states_attn_mask'] = all_state_attn_mask
-            probe_outs['labels'] = get_matching_state_labels(all_beaker_states, beaker_state_to_idx, probe_outs, tokenizer, device=args.device)
+        probe_outs['all_states_encoding'] = all_state_vectors
+        # else:
+        #     # (numtotal,1,embeddim)
+        #     probe_outs['all_states_encoding'] = state_model(all_state_input_ids)
+        #     probe_outs['all_states_attn_mask'] = all_state_attn_mask
+        probe_outs['labels'] = get_matching_state_labels(all_beaker_states, beaker_state_to_idx, probe_outs, tokenizer, device=args.device)
         model_outs = full_joint_model(inputs['input_ids'], inputs['attention_mask'], offset_mapping=inputs['offset_mapping'], probe_outs=probe_outs, localizer_key=inputs['state_key'])
         valid_loss = model_outs["loss"]
         probe_val_loss += valid_loss*len(inputs['input_ids'])
@@ -307,17 +310,17 @@ for i in range(args.epochs):
         device=args.device, control_input=args.control_input,
     )):
         optimizer.zero_grad()
-        if encode_tgt_state:
-            probe_outs['raw_inputs'] = raw_state_targets
-            probe_outs['all_states_input_ids'] = all_state_input_ids
-            if encoding == "NL":
-                probe_outs['all_states_attn_mask'] = all_state_attn_mask
-                probe_outs['all_states_encoding'] = all_state_vectors
-            else:
-                # (numtotal,1,embeddim)
-                probe_outs['all_states_encoding'] = state_model(all_state_input_ids)
-                probe_outs['all_states_attn_mask'] = all_state_attn_mask
-            probe_outs['labels'] = get_matching_state_labels(all_beaker_states, beaker_state_to_idx, probe_outs, tokenizer, device=args.device)
+        # if encode_tgt_state:
+        probe_outs['raw_inputs'] = raw_state_targets
+        probe_outs['all_states_input_ids'] = all_state_input_ids
+        # if encoding == "NL":
+        probe_outs['all_states_attn_mask'] = all_state_attn_mask
+        probe_outs['all_states_encoding'] = all_state_vectors
+        # else:
+        #     # (numtotal,1,embeddim)
+        #     probe_outs['all_states_encoding'] = state_model(all_state_input_ids)
+        #     probe_outs['all_states_attn_mask'] = all_state_attn_mask
+        probe_outs['labels'] = get_matching_state_labels(all_beaker_states, beaker_state_to_idx, probe_outs, tokenizer, device=args.device)
         probe_loss = full_joint_model(inputs['input_ids'], inputs['attention_mask'], offset_mapping=inputs['offset_mapping'], probe_outs=probe_outs, localizer_key=inputs['state_key'])["loss"]
         probe_loss.backward()
         probe_train_losses.append(probe_loss)
