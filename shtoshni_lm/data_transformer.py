@@ -64,8 +64,10 @@ def convert_to_transformer_batches(
         # make inputs
         inps = []
         for i, inp in enumerate(inputs):
-            string = ' '.join(inp).replace(' \n ', '.\n')
-            string = translate_states_to_nl(init_states[i], domain, isinstance(tokenizer, BartTokenizerFast)) + '. ' + string
+            # string = ' '.join(inp).replace(' \n ', '.\n')
+            string = ' '.join(inp).replace(' \n ', '. ')
+            string = translate_states_to_nl(
+                init_states[i], domain, isinstance(tokenizer, BartTokenizerFast)) + '. ' + string
             inps.append(string)
 
         if state_targets_type_split[0] == 'text':
@@ -77,7 +79,7 @@ def convert_to_transformer_batches(
             tgt = ' '.join(tgt) + '.'
             # if isinstance(tokenizer, T5TokenizerFast) and '  ' in tgt:
             #     tgt = tgt.replace('  ', ' first ')
-            lang_targets_new.append(tgt)
+            lang_targets_new.append(tgt + tokenizer.eos_token)
         lang_targets = lang_targets_new
 
         # if control_input:
@@ -85,7 +87,8 @@ def convert_to_transformer_batches(
         #     inps = [", ".join([f"the {int_to_word[num]} beaker is empty" for num in range(7)]) + "." for _ in inps]
 
         inp_enc = tokenizer(inps, return_tensors='pt', padding=True, truncation=True, return_offsets_mapping=True).to(device)
-        lang_tgt_enc = tokenizer(lang_targets, return_tensors='pt', padding=True, truncation=True).to(device)
+        lang_tgt_enc = tokenizer(lang_targets, return_tensors='pt', padding=True, truncation=True,
+                                 add_special_tokens=False).to(device)
         inp_enc['original_text'] = inps
         lang_tgt_enc['original_text'] = lang_targets
 
@@ -106,10 +109,11 @@ def convert_to_transformer_batches(
                         state_slice = random.choice(state_target.split(","))
                     else:
                         raise ValueError(add_state)
-                    target_list.append(PROBE_START + " " + state_slice + " " + PROBE_END + " " + lang_target)
+                    target_list.append(
+                        PROBE_START + " " + state_slice + " " + PROBE_END + " " + lang_target)
 
                 state_tgt_enc = tokenizer(
-                    target_list, return_tensors='pt', padding=True, truncation=True).to(device)
+                    target_list, return_tensors='pt', padding=True, truncation=True, add_special_tokens=False).to(device)
                 # print(state_tgt_enc)
                 # print(tokenizer.batch_decode(state_tgt_enc['input_ids']))
                 state_tgt_enc['key'] = state_key

@@ -179,13 +179,17 @@ class Experiment(object):
 					if self.args.use_state_loss and random.random() <= self.args.rap_prob:
 						if random.random() < 0.01:
 							logger.info(f"\nEncoder sequence: {self.tokenizer.decode(inputs['input_ids'][0])}")
-							logger.info(f"Decoder sequence: {self.tokenizer.decode(state_tgts['input_ids'][0])}\n")
+							logger.info(f"Probing Decoder sequence: {self.tokenizer.decode(state_tgts['input_ids'][0])}\n")
 
 						return_dict = model(
 							input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
 							labels=state_tgts['input_ids'], return_dict=True,
 						)
 					else:
+						if random.random() < 0.01:
+							logger.info(f"\nEncoder sequence: {self.tokenizer.decode(inputs['input_ids'][0])}")
+							logger.info(f"Simple Decoder sequence: {self.tokenizer.decode(lang_tgts['input_ids'][0])}\n")
+
 						return_dict = model(
 							input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
 							labels=lang_tgts['input_ids'], return_dict=True,
