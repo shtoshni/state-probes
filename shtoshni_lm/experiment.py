@@ -174,6 +174,7 @@ class Experiment(object):
 				def handle_example(inputs, lang_tgts, state_tgts):
 					if self.args.use_state_loss and random.random() <= self.args.rap_prob:
 						if random.random() < 0.01:
+						# if random.random() < 1.0:  # 0.01:
 							logger.info(f"\nEncoder sequence: {self.tokenizer.decode(inputs['input_ids'][0])}")
 							logger.info(f"Probing Decoder sequence: {self.tokenizer.decode(state_tgts['input_ids'][0])}\n")
 
