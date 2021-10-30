@@ -76,7 +76,7 @@ def convert_to_transformer_batches(
         # make lang targets
         lang_targets_new = []
         for tgt in lang_targets:
-            tgt = ' '.join(tgt) + '.'
+            tgt = ' '.join(tgt)  # + '.'
             # if isinstance(tokenizer, T5TokenizerFast) and '  ' in tgt:
             #     tgt = tgt.replace('  ', ' first ')
             lang_targets_new.append(tgt + tokenizer.eos_token)
