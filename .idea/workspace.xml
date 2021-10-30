@@ -2,12 +2,17 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d231ca71-0637-46eb-b66c-6d22945ae962" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/alchemy/parseScone.py" beforeDir="false" afterPath="$PROJECT_DIR$/data/alchemy/parseScone.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/alchemy/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/data/alchemy/utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/shtoshni_lm/data_transformer.py" beforeDir="false" afterPath="$PROJECT_DIR$/shtoshni_lm/data_transformer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/slurm_scripts/lm/lm_models.py" beforeDir="false" afterPath="$PROJECT_DIR$/slurm_scripts/lm/lm_models.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/slurm_scripts/outputs/state_lm/batch-commands-last.txt" beforeDir="false" afterPath="$PROJECT_DIR$/slurm_scripts/outputs/state_lm/batch-commands-last.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/slurm_scripts/outputs/state_lm/commands.txt" beforeDir="false" afterPath="$PROJECT_DIR$/slurm_scripts/outputs/state_lm/commands.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/slurm_scripts/outputs/state_lm/sbatch-script-last.txt" beforeDir="false" afterPath="$PROJECT_DIR$/slurm_scripts/outputs/state_lm/sbatch-script-last.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shtoshni_lm/experiment.py" beforeDir="false" afterPath="$PROJECT_DIR$/shtoshni_lm/experiment.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/slurm_scripts/lm/lm_models.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/slurm_scripts/lm/run.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/slurm_scripts/outputs/state_lm/batch-commands-last.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/slurm_scripts/outputs/state_lm/commands.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/slurm_scripts/outputs/state_lm/sbatch-script-last.txt" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -94,7 +99,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1632778713486</updated>
-      <workItem from="1633384508763" duration="89731000" />
+      <workItem from="1633384508763" duration="94387000" />
     </task>
     <servers />
   </component>

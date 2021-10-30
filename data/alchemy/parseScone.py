@@ -49,13 +49,18 @@ class Datum:
         for statement, state in zip(self.statements, self.states):
             return statement, state
 
-    def all_pairs(self, join='\n'):
+    def all_pairs(self, join='\n', get_subsequent_state=False):
         for i in range(len(self.statements) -1):
             prior = []
             for j in range(i+1):
                 if j>0: prior.append(join)
                 prior.extend(self.statements[j])
-            yield prior, self.statements[i+1], self.states[i]
+            output = (prior, self.statements[i+1], self.states[i],)
+            if get_subsequent_state:
+                yield output + (self.states[i+1],)
+            else:
+                yield output
+
 
 class SyntheticDatum(Datum):
     def __init__(self, state_ln, lang_ln, kind='alchemy'):
@@ -125,16 +130,20 @@ def getBatches(dataset, batchsize):
         batch.append(pair)
     yield batch
 
-def getBatchesWithInit(dataset, batchsize):
-    pairs = [x + (d.initial_state,) for d in dataset for x in d.all_pairs()] 
+
+def getBatchesWithInit(dataset, batchsize, get_subsequent_state=False):
+    pairs = [x + (d.initial_state,) for d in dataset for x in d.all_pairs(get_subsequent_state=get_subsequent_state)]
     pairs = sorted(pairs, key=lambda x: len(x[0]))
     batch = []
     for i, pair in enumerate(pairs):
+        # print(pair)
         if i!=0 and i%batchsize==0:
             yield batch
             batch = []
+        # print(pair)
         batch.append(pair)
     yield batch
+
 
 def getBatches(dataset, batchsize):
     pairs = [x for d in dataset for x in d.all_pairs()] 
@@ -147,11 +156,13 @@ def getBatches(dataset, batchsize):
         batch.append(pair)
     yield batch
 
+
 def getRBBatches(dataset, batchsize):
     for batch in getBatches(dataset, batchsize):
         inputs, lang_targets, state_targets = zip(*batch)
         inps = [ [inp_seq ] for inp_seq in inputs]
         yield inps, lang_targets, state_targets
+
 
 def getSeq2SeqBatches(dataset, batchsize):
     for batch in getBatches(dataset, batchsize):

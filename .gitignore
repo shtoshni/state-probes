@@ -12,3 +12,4 @@ intervention_outs/
 models/
 .idea/
 .idea/workspace.xml
+slurm_scripts/
