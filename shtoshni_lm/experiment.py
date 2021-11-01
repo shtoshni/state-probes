@@ -87,14 +87,10 @@ class Experiment(object):
 
 	def _load_data(self):
 		# loading data
-		self.dataset, lang_v, state_v = loadData(
-			split="train", kind="alchemy", synthetic=False, base_dir=self.args.base_dir)
+		self.dataset, _, _ = loadData(split="train", kind="alchemy", synthetic=False, base_dir=self.args.base_dir)
 		# TODO (Remove this)
-		# self.dataset = self.dataset[:2000]
-		self.dev_dataset, lang_v_dev, state_v_dev = loadData(
-			split="dev", kind="alchemy", synthetic=False, base_dir=self.args.base_dir)
-		self.all_train_states = [" ".join(state) for _, _, state in [x for d in self.dataset for x in d.all_pairs()]]
-		self.all_dev_states = [" ".join(state) for _, _, state in [x for d in self.dev_dataset for x in d.all_pairs()]]
+		# self.dataset = self.dataset[:50]
+		self.dev_dataset, _, _ = loadData(split="dev", kind="alchemy", synthetic=False, base_dir=self.args.base_dir)
 
 	def _load_previous_checkpoint(self, last_checkpoint=True):
 		"""Loads the last checkpoint or best checkpoint.
@@ -178,14 +174,19 @@ class Experiment(object):
 				def handle_example(inputs, lang_tgts, state_tgts):
 					if self.args.use_state_loss and random.random() <= self.args.rap_prob:
 						if random.random() < 0.01:
+						# if random.random() < 1.0:  # 0.01:
 							logger.info(f"\nEncoder sequence: {self.tokenizer.decode(inputs['input_ids'][0])}")
-							logger.info(f"Decoder sequence: {self.tokenizer.decode(state_tgts['input_ids'][0])}\n")
+							logger.info(f"Probing Decoder sequence: {self.tokenizer.decode(state_tgts['input_ids'][0])}\n")
 
 						return_dict = model(
 							input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
 							labels=state_tgts['input_ids'], return_dict=True,
 						)
 					else:
+						if random.random() < 0.01:
+							logger.info(f"\nEncoder sequence: {self.tokenizer.decode(inputs['input_ids'][0])}")
+							logger.info(f"Simple Decoder sequence: {self.tokenizer.decode(lang_tgts['input_ids'][0])}\n")
+
 						return_dict = model(
 							input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
 							labels=lang_tgts['input_ids'], return_dict=True,
@@ -209,7 +210,7 @@ class Experiment(object):
 					logger.info(output_str)
 
 			self.train_info['num_epochs'] += 1
-			logger.info(f"epoch {self.train_info['num_epochs']}, avg lang loss {sum(lang_train_losses) / len(lang_train_losses)}")
+			logger.info(f"epoch {self.train_info['num_epochs']}, avg lang loss {(sum(lang_train_losses) / len(lang_train_losses)):.3f}")
 			dev_loss = self.periodic_model_eval()
 			# Get elapsed time
 			elapsed_time = time.time() - start_time
@@ -224,38 +225,44 @@ class Experiment(object):
 				break
 
 	@torch.no_grad()
-	def periodic_model_eval(self):
-		model = self.model
-		model.eval()
+	def get_dataset_loss(self, model, dataset):
 		n_val = 0
 		tot_val_loss = 0
+
 		for j, (inputs, lang_tgts, state_tgts, raw_state_targets, init_states) in enumerate(
 				convert_to_transformer_batches(
-					self.dev_dataset, self.tokenizer, self.args.batchsize,
+					dataset, self.tokenizer, self.args.batchsize,
 					domain="alchemy", device=self.device, add_state=self.args.add_state,
 				)
 		):
 			return_dict = model(input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
 								labels=lang_tgts['input_ids'], return_dict=True)
 
-			loss_fct = torch.nn.CrossEntropyLoss()
+			loss_fct = torch.nn.CrossEntropyLoss(ignore_index=self.tokenizer.pad_token_id, reduction="sum")
 			lm_logits = return_dict.logits
+			lm_logits = lm_logits.view(-1, len(self.tokenizer))
 
 			if self.args.use_state_loss:
-				lm_logits = lm_logits.view(-1, len(self.tokenizer))
 				logit_mask = torch.tensor(
 					self.probing_tokens_mask, dtype=torch.float32, device=inputs['input_ids'].device)
 				lm_logits = lm_logits * (1 - logit_mask) + logit_mask * (-1e10)
 
 			lang_loss = loss_fct(lm_logits, lang_tgts['input_ids'].view(-1))
-
-			tot_val_loss += lang_loss.item() * len(inputs['input_ids'])
+			# logger.info(f"Manual loss: {lang_loss: .3f}, Automatic loss: {return_dict.loss: .3f}")
+			tot_val_loss += lang_loss.item()  # * len(inputs['input_ids'])
 			n_val += len(inputs['input_ids'])
 
-		logger.info(f"n_val: {n_val}")
+		# logger.info(f"n_val: {n_val}")
 		avg_val_loss = tot_val_loss / n_val
-		logger.info(f"epoch {self.train_info['num_epochs']}, avg val loss: {avg_val_loss}")
+		return avg_val_loss
 
+	@torch.no_grad()
+	def periodic_model_eval(self):
+		model = self.model
+		model.eval()
+
+		avg_val_loss = self.get_dataset_loss(model, self.dev_dataset)
+		logger.info(f"epoch {self.train_info['num_epochs']}, avg val loss: {avg_val_loss}")
 		if avg_val_loss <= self.train_info['best_val_loss']:
 			logger.info("NEW BEST MODEL")
 			self.train_info['best_val_loss'] = avg_val_loss
@@ -271,34 +278,7 @@ class Experiment(object):
 	def final_eval(self):
 		model = self.model
 		model.eval()
-		n_val = 0
-		tot_val_loss = 0
-		for j, (inputs, lang_tgts, state_tgts, raw_state_targets, init_states) in enumerate(
-				convert_to_transformer_batches(
-					self.dev_dataset, self.tokenizer, self.args.batchsize,
-					domain="alchemy", device=self.device, add_state=self.args.add_state,
-				)
-		):
-			return_dict = model(input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
-								labels=lang_tgts['input_ids'], return_dict=True)
-
-			if self.args.use_state_loss:
-				loss_fct = torch.nn.CrossEntropyLoss()
-				lm_logits = return_dict.logits
-				lm_logits = lm_logits.view(-1, len(self.tokenizer))
-
-				logit_mask = torch.tensor(self.probing_tokens_mask, dtype=torch.float32,
-										  device=inputs['input_ids'].device)
-				lm_logits = lm_logits * (1 - logit_mask) + logit_mask * (-1e10)
-				lang_loss = loss_fct(lm_logits, lang_tgts['input_ids'].view(-1))
-			else:
-				lang_loss = return_dict.loss
-
-			tot_val_loss += lang_loss.item() * len(inputs['input_ids'])
-			n_val += len(inputs['input_ids'])
-
-		logger.info(f"n_val: {n_val}")
-		avg_val_loss = tot_val_loss / n_val
+		avg_val_loss = self.get_dataset_loss(model, self.dev_dataset)
 		logger.info(f"epoch {self.train_info['num_epochs']}, avg val loss: {avg_val_loss}")
 		return avg_val_loss
 

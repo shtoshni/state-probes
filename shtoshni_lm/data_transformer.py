@@ -9,12 +9,18 @@ PROBE_START = '[PROBE_START]'
 PROBE_END = '[PROBE_END]'
 
 
-def identify_beaker_idx(lang_target):
-    for bucket_idx in range(len(int_to_word)):
-        if int_to_word[bucket_idx] in lang_target:
-            return bucket_idx
-    else:
-        return -1
+def identify_beaker_idx(state_targets, subsequent_state_targets):
+    output = []
+    for state_target, subsequent_state_target in zip(state_targets, subsequent_state_targets):
+        for idx, (before_content, after_content) in enumerate(
+                zip(state_target, subsequent_state_target)):
+            if before_content.strip() != after_content.strip():
+                output.append(idx)
+
+        # print(state_target, subsequent_state_target, output[-1])
+
+    return output
+
 
 def convert_to_transformer_batches(
     dataset, tokenizer, batchsize, random=None,
@@ -26,31 +32,38 @@ def convert_to_transformer_batches(
         {state|init_state|interm_states|single_beaker_{...}|utt_beaker_{...}{.offset{1|2|...|6}}}.{NL|raw}|text
     """
     state_targets_type_split = state_targets_type.split('.')
-    batches = list(getBatchesWithInit(dataset, batchsize))
+    batches = list(getBatchesWithInit(dataset, batchsize, get_subsequent_state=True))
     if random: random.shuffle(batches)
+
+    # print(batches[0])
     for batch in batches:
-        inputs, lang_targets, state_targets, init_states = zip(*batch)
+        inputs, lang_targets, prev_state_targets, subsequent_state_targets, init_states = zip(*batch)
         init_states = [' '.join(init_state) for init_state in init_states]
 
         # print(inputs[0], lang_targets[0], state_targets[0], init_states[0])
         # make state targets
         if state_targets_type_split[0] == 'state':
-            state_targets = [decide_translate(' '.join(tgt), state_targets_type, domain, isinstance(tokenizer, BartTokenizerFast)) for tgt in state_targets]
+            state_targets = [
+                decide_translate(' '.join(tgt), state_targets_type, domain, isinstance(tokenizer, BartTokenizerFast))
+                for tgt in prev_state_targets]
             state_targets = {'full_state': state_targets}
             # print(state_targets, len(state_targets['full_state']))
         elif state_targets_type_split[0] == 'init_state':
-            state_targets = [decide_translate(init_state, state_targets_type, domain, isinstance(tokenizer, BartTokenizerFast)) for init_state in init_states]
+            state_targets = [
+                decide_translate(init_state, state_targets_type, domain, isinstance(tokenizer, BartTokenizerFast))
+                for init_state in init_states]
             state_targets = {'full_state': state_targets}
         elif state_targets_type_split[0].startswith('single_beaker'):
             assert domain == 'alchemy'
             if state_targets_type_split[0].endswith("init"):
                 states = init_states
             elif state_targets_type_split[0].endswith("final"):
-                states = [' '.join(tgt) for tgt in state_targets]
+                states = [' '.join(tgt) for tgt in prev_state_targets]
             else:
                 raise NotImplementedError()
             # {bn -> [`bn`-th beaker's state in example i (x # examples for beaker bn)]}
             state_targets = {int(beaker.split(':')[0]) - 1: [] for beaker in states[0].split(' ')}
+
             for state in states:
                 state_descr = decide_translate(state, state_targets_type, domain, isinstance(tokenizer, BartTokenizerFast))
                 if isinstance(tokenizer, BartTokenizerFast):
@@ -59,13 +72,16 @@ def convert_to_transformer_batches(
                     beaker_states = state_descr.split(', ')
                 for bn, beaker_state in enumerate(beaker_states):
                     state_targets[bn].append(beaker_state)
-        else: assert state_targets_type_split[0] == 'text'
+        else:
+            assert state_targets_type_split[0] == 'text'
 
         # make inputs
         inps = []
         for i, inp in enumerate(inputs):
-            string = ' '.join(inp).replace(' \n ', '.\n')
-            string = translate_states_to_nl(init_states[i], domain, isinstance(tokenizer, BartTokenizerFast)) + '. ' + string
+            # string = ' '.join(inp).replace(' \n ', '.\n')
+            string = ' '.join(inp).replace(' \n ', '. ')
+            string = translate_states_to_nl(
+                init_states[i], domain, isinstance(tokenizer, BartTokenizerFast)) + '. ' + string
             inps.append(string)
 
         if state_targets_type_split[0] == 'text':
@@ -74,10 +90,10 @@ def convert_to_transformer_batches(
         # make lang targets
         lang_targets_new = []
         for tgt in lang_targets:
-            tgt = ' '.join(tgt) + '.'
+            tgt = ' '.join(tgt)  # + '.'
             # if isinstance(tokenizer, T5TokenizerFast) and '  ' in tgt:
             #     tgt = tgt.replace('  ', ' first ')
-            lang_targets_new.append(tgt)
+            lang_targets_new.append(tgt + tokenizer.eos_token)
         lang_targets = lang_targets_new
 
         # if control_input:
@@ -85,31 +101,35 @@ def convert_to_transformer_batches(
         #     inps = [", ".join([f"the {int_to_word[num]} beaker is empty" for num in range(7)]) + "." for _ in inps]
 
         inp_enc = tokenizer(inps, return_tensors='pt', padding=True, truncation=True, return_offsets_mapping=True).to(device)
-        lang_tgt_enc = tokenizer(lang_targets, return_tensors='pt', padding=True, truncation=True).to(device)
+        lang_tgt_enc = tokenizer(lang_targets, return_tensors='pt', padding=True, truncation=True,
+                                 add_special_tokens=False).to(device)
         inp_enc['original_text'] = inps
         lang_tgt_enc['original_text'] = lang_targets
 
+        beaker_targets = identify_beaker_idx(prev_state_targets, subsequent_state_targets)
         for state_key in state_targets:
             state_tgt_enc = None
             if random:
                 target_list = []
-                for (state_target, lang_target) in zip(state_targets[state_key], lang_targets):
+                for (state_target, lang_target, beaker_target) in zip(
+                        state_targets[state_key], lang_targets, beaker_targets):
                     if add_state == 'all':
                         state_slice = state_target
                     elif add_state == 'targeted':
-                        beaker_idx = identify_beaker_idx(lang_target)
-                        if beaker_idx == -1:
+                        # beaker_idx = identify_beaker_idx(lang_target)
+                        if beaker_target == -1:
                             state_slice = random.choice(state_target.split(","))
                         else:
-                            state_slice = state_target.split(",")[beaker_idx]
+                            state_slice = state_target.split(",")[beaker_target]
                     elif add_state == 'random':
                         state_slice = random.choice(state_target.split(","))
                     else:
                         raise ValueError(add_state)
-                    target_list.append(PROBE_START + " " + state_slice + " " + PROBE_END + " " + lang_target)
+                    target_list.append(
+                        PROBE_START + " " + state_slice + " " + PROBE_END + " " + lang_target)
 
                 state_tgt_enc = tokenizer(
-                    target_list, return_tensors='pt', padding=True, truncation=True).to(device)
+                    target_list, return_tensors='pt', padding=True, truncation=True, add_special_tokens=False).to(device)
                 # print(state_tgt_enc)
                 # print(tokenizer.batch_decode(state_tgt_enc['input_ids']))
                 state_tgt_enc['key'] = state_key

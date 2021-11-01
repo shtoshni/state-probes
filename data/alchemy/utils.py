@@ -191,8 +191,6 @@ def check_well_formedness(states):
     return True
 
 
-
-
 def translate_states_to_nl(state_inputs, domain, add_space=True):
     """
     If second-last beaker, adds ' ' before the sentence

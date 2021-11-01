@@ -1,8 +1,0 @@
-/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 20 --patience 5 --use_state_loss --add_state all --rap_prob 0.1
-/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 20 --patience 5 --use_state_loss --add_state all --rap_prob 0.25
-/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 20 --patience 5 --use_state_loss --add_state all --rap_prob 0.5
-/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 20 --patience 5 --use_state_loss --add_state all --rap_prob 1.0
-/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 20 --patience 5 --use_state_loss --add_state random --rap_prob 0.1
-/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 20 --patience 5 --use_state_loss --add_state random --rap_prob 0.25
-/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 20 --patience 5 --use_state_loss --add_state random --rap_prob 0.5
-/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 20 --patience 5 --use_state_loss --add_state random --rap_prob 1.0
