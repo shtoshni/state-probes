@@ -72,12 +72,12 @@ def get_all_states(tokenizer, device):
 
 
 @torch.no_grad()
-def probing_exp(model_path: str):
+def probing_exp(model_path: str, base_dir: str):
 	device = torch.device('cpu')
 	if torch.cuda.is_available():
 		device = torch.device('cuda')
 
-	dev_dataset, _, _ = loadData(split="dev", kind="alchemy", synthetic=False)
+	dev_dataset, _, _ = loadData(split="dev", kind="alchemy", synthetic=False, base_dir=base_dir)
 
 	model, tokenizer = initialize_model(model_path)
 	if torch.cuda.is_available():
@@ -129,11 +129,12 @@ def probing_exp(model_path: str):
 def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('model_path', type=str, help="Model path")
+	parser.add_argument('base_dir', type=str, default=None)
 
 	args = parser.parse_args()
 
 	assert (path.exists(args.model_path))
-	probing_exp(args.model_path)
+	probing_exp(args.model_path, args.base_dir)
 
 
 if __name__=='__main__':

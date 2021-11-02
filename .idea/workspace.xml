@@ -2,10 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d231ca71-0637-46eb-b66c-6d22945ae962" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/shtoshni_lm/probing_experiment.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/notebooks/Constrained Search.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/notebooks/Constrained Search.ipynb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/shtoshni_lm/data_transformer.py" beforeDir="false" afterPath="$PROJECT_DIR$/shtoshni_lm/data_transformer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shtoshni_lm/probing_experiment.py" beforeDir="false" afterPath="$PROJECT_DIR$/shtoshni_lm/probing_experiment.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,11 +23,15 @@
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/shtoshni_lm/main.py" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/slurm_scripts/probing" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/slurm_scripts/probing" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/slurm_scripts/probing" />
       <recent name="$PROJECT_DIR$/slurm_scripts/lm" />
     </key>
   </component>
@@ -92,7 +94,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1632778713486</updated>
-      <workItem from="1633384508763" duration="105421000" />
+      <workItem from="1633384508763" duration="105964000" />
     </task>
     <servers />
   </component>
