@@ -33,6 +33,8 @@ def convert_to_transformer_batches(
     """
     state_targets_type_split = state_targets_type.split('.')
     batches = list(getBatchesWithInit(dataset, batchsize, get_subsequent_state=True))
+
+    print(len(batches))
     if random: random.shuffle(batches)
 
     # print(batches[0])

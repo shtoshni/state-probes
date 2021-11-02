@@ -13,3 +13,4 @@ models/
 .idea/
 .idea/workspace.xml
 slurm_scripts/
+.ipynb_checkpoints/
