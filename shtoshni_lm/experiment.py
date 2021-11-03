@@ -3,6 +3,7 @@ import os
 import time
 import logging
 import random
+import wandb
 
 from os import path
 
@@ -41,6 +42,7 @@ class Experiment(object):
 		# Step 3 - Load model and resume training if required
 		# Firstly initialize dictionary to track key training variables
 		self.train_info = {'best_val_loss': 10**10, 'global_steps': 0, 'num_epochs': 0, 'num_stuck_evals': 0}
+		self.loss_fct = torch.nn.CrossEntropyLoss(ignore_index=self.tokenizer.pad_token_id, reduction="sum")
 
 		if self.eval_model:
 			# Load the best checkpoint
@@ -77,7 +79,7 @@ class Experiment(object):
 		if torch.cuda.is_available():
 			self.model.cuda()
 
-		if self.args.use_state_loss:
+		if self.args.rap_prob:
 			self.tokenizer.add_special_tokens({
 				'additional_special_tokens': ['[PROBE_START]', '[PROBE_END]']
 			})
@@ -154,7 +156,7 @@ class Experiment(object):
 		This method implements the training loop.
 		Within the training loop, the model is periodically evaluated on the dev set(s).
 		"""
-		model, optimizer = self.model, self.optimizer
+		model, optimizer, optim_scheduler = self.model, self.optimizer, self.optim_scheduler
 		model.train()
 
 		start_time = time.time()
@@ -171,40 +173,46 @@ class Experiment(object):
 					)
 			):
 
-				def handle_example(inputs, lang_tgts, state_tgts):
-					if self.args.use_state_loss and random.random() <= self.args.rap_prob:
+				def handle_example():
+					if self.args.rap_prob and random.random() <= self.args.rap_prob:
 						if random.random() < 0.01:
-						# if random.random() < 1.0:  # 0.01:
+						# if random.random() < 1.0:
 							logger.info(f"\nEncoder sequence: {self.tokenizer.decode(inputs['input_ids'][0])}")
 							logger.info(f"Probing Decoder sequence: {self.tokenizer.decode(state_tgts['input_ids'][0])}\n")
 
-						return_dict = model(
-							input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
-							labels=state_tgts['input_ids'], return_dict=True,
-						)
+						target = state_tgts['input_ids']
 					else:
 						if random.random() < 0.01:
 							logger.info(f"\nEncoder sequence: {self.tokenizer.decode(inputs['input_ids'][0])}")
 							logger.info(f"Simple Decoder sequence: {self.tokenizer.decode(lang_tgts['input_ids'][0])}\n")
 
-						return_dict = model(
-							input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
-							labels=lang_tgts['input_ids'], return_dict=True,
-						)
+						target = lang_tgts['input_ids']
 
-					lang_loss = return_dict.loss
+					return_dict = model(
+						input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
+						labels=target, return_dict=True,
+					)
+
+					lm_logits = return_dict.logits
+					lm_logits = lm_logits.view(-1, len(self.tokenizer))
+					loss = self.loss_fct(lm_logits, target.view(-1))
+
 					optimizer.zero_grad()
-					lang_loss.backward()
+					loss.backward()
 					optimizer.step()
-					self.optim_scheduler.step()
+					optim_scheduler.step()
 
-					loss_val = lang_loss.item()
+					num_tokens = torch.sum((target != self.tokenizer.pad_token_id).to(torch.float)).item()
+					loss_val = loss.item()/num_tokens
 					lang_train_losses.append(loss_val)
 					self.train_info['global_steps'] += 1
 
 					return loss_val
 
-				lang_loss = handle_example(inputs, lang_tgts, state_tgts)
+				lang_loss = handle_example()
+				if self.args.use_wandb:
+					wandb.log({"train/loss": lang_loss, 'batch': self.train_info['global_steps']})
+
 				if j % 100 == 0:
 					output_str = f"epoch {self.train_info['num_epochs']}, batch {j}, lang score: {lang_loss: .3f}"
 					logger.info(output_str)
@@ -212,6 +220,9 @@ class Experiment(object):
 			self.train_info['num_epochs'] += 1
 			logger.info(f"epoch {self.train_info['num_epochs']}, avg lang loss {(sum(lang_train_losses) / len(lang_train_losses)):.3f}")
 			dev_loss = self.periodic_model_eval()
+			if self.args.use_wandb:
+				wandb.log({"dev/loss": dev_loss, 'batch': self.train_info['global_steps']})
+
 			# Get elapsed time
 			elapsed_time = time.time() - start_time
 
@@ -226,6 +237,7 @@ class Experiment(object):
 
 	@torch.no_grad()
 	def get_dataset_loss(self, model, dataset):
+		total_tokens = 0
 		n_val = 0
 		tot_val_loss = 0
 
@@ -242,18 +254,20 @@ class Experiment(object):
 			lm_logits = return_dict.logits
 			lm_logits = lm_logits.view(-1, len(self.tokenizer))
 
-			if self.args.use_state_loss:
+			if self.args.rap_prob:
 				logit_mask = torch.tensor(
 					self.probing_tokens_mask, dtype=torch.float32, device=inputs['input_ids'].device)
 				lm_logits = lm_logits * (1 - logit_mask) + logit_mask * (-1e10)
 
+			num_tokens = torch.sum((lang_tgts['input_ids'] != self.tokenizer.pad_token_id).to(torch.float)).item()
 			lang_loss = loss_fct(lm_logits, lang_tgts['input_ids'].view(-1))
 			# logger.info(f"Manual loss: {lang_loss: .3f}, Automatic loss: {return_dict.loss: .3f}")
-			tot_val_loss += lang_loss.item()  # * len(inputs['input_ids'])
+			tot_val_loss += lang_loss.item()
 			n_val += len(inputs['input_ids'])
+			total_tokens += num_tokens
 
 		# logger.info(f"n_val: {n_val}")
-		avg_val_loss = tot_val_loss / n_val
+		avg_val_loss = tot_val_loss / total_tokens
 		return avg_val_loss
 
 	@torch.no_grad()
