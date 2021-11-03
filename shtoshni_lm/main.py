@@ -1,11 +1,12 @@
 import os
 import argparse
+import wandb
 from os import path
 
 from experiment import Experiment
 
+
 def main():
-    # parse args
     parser = argparse.ArgumentParser()
     parser.add_argument('--lr', type=float, default=1e-5)
     parser.add_argument('--batchsize', type=int, default=24)
@@ -14,20 +15,26 @@ def main():
     parser.add_argument('--seed', type=int, default=45)
     parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--patience', type=int, default=2)
-    parser.add_argument('--use_state_loss', default=False, action="store_true")
-    parser.add_argument('--rap_prob', default=0.25, type=float)
-    parser.add_argument('--add_state', choices=['all', 'targeted', 'random'], type=str, default='targeted')
     parser.add_argument('--base_model_dir', type=str, default='models')
     parser.add_argument('--base_dir', type=str, default=None)
+    parser.add_argument('--use_wandb', default=False, action="store_true")
+
+    parser.add_argument('--rap_prob', default=0.0, type=float)
+    parser.add_argument('--add_state', choices=['all', 'targeted', 'random'], type=str, default='targeted')
+    parser.add_argument('--state_repr', default="text", choices=["text", "raw"], type=str)
+
     args = parser.parse_args()
 
     model_dir_str = "epochs_" + str(args.epochs)
     model_dir_str += "_patience_" + str(args.patience)
 
-    if args.use_state_loss:
+    if args.rap_prob:
         model_dir_str += "_state"
         model_dir_str += f"_{args.rap_prob}"
         model_dir_str += f"_{args.add_state}"
+        model_dir_str += f"_{args.state_repr}"
+
+    model_dir_str += f"_seed_{args.seed}"
 
     args.model_dir = path.join(args.base_model_dir, model_dir_str)
     args.best_model_dir = path.join(args.model_dir, "best")
@@ -40,6 +47,12 @@ def main():
 
     args.model_path = path.join(args.model_dir, "model.pt")
     args.best_model_path = path.join(args.best_model_dir, "model.pt")
+
+    if args.use_wandb:
+        wandb.init(
+            id=model_dir_str, project="state-probing", config=vars(args), resume=True,
+            notes="State probing", tags="november",
+        )
 
     Experiment(args)
 

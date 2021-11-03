@@ -35,7 +35,8 @@ def convert_to_transformer_batches(
     batches = list(getBatchesWithInit(dataset, batchsize, get_subsequent_state=True))
 
     print(len(batches))
-    if random: random.shuffle(batches)
+    if random:
+        random.shuffle(batches)
 
     # print(batches[0])
     for batch in batches:
@@ -116,7 +117,10 @@ def convert_to_transformer_batches(
                 for (state_target, lang_target, beaker_target) in zip(
                         state_targets[state_key], lang_targets, beaker_targets):
                     if add_state == 'all':
-                        state_slice = state_target
+                        # Randomize the state slice
+                        beaker_states = state_target.split(", ")
+                        random.shuffle(beaker_states)
+                        state_slice = ", ".join(beaker_states)
                     elif add_state == 'targeted':
                         # beaker_idx = identify_beaker_idx(lang_target)
                         if beaker_target == -1:
