@@ -34,16 +34,14 @@ def convert_to_transformer_batches(
     state_targets_type_split = state_targets_type.split('.')
     batches = list(getBatchesWithInit(dataset, batchsize, get_subsequent_state=True))
 
-    print(len(batches))
+    # print(len(batches))
     if random:
         random.shuffle(batches)
 
-    # print(batches[0])
     for batch in batches:
         inputs, lang_targets, prev_state_targets, subsequent_state_targets, init_states = zip(*batch)
         init_states = [' '.join(init_state) for init_state in init_states]
 
-        # print(inputs[0], lang_targets[0], state_targets[0], init_states[0])
         # make state targets
         if state_targets_type_split[0] == 'state':
             state_targets = [
