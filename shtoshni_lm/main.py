@@ -12,7 +12,7 @@ def main():
     parser.add_argument('--batchsize', type=int, default=24)
     parser.add_argument('--encode_init_state', type=str, default='NL', choices=[False, 'raw', 'NL'])
     parser.add_argument('--eval', default=False, action="store_true")
-    parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--seed', type=int, default=10)
     parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--patience', type=int, default=2)
     parser.add_argument('--base_model_dir', type=str, default='models')
