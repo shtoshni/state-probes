@@ -42,7 +42,7 @@ class Experiment(object):
 		# Step 3 - Load model and resume training if required
 		# Firstly initialize dictionary to track key training variables
 		self.train_info = {'best_val_loss': 10**10, 'global_steps': 0, 'num_epochs': 0, 'num_stuck_evals': 0}
-		self.loss_fct = torch.nn.CrossEntropyLoss(ignore_index=self.tokenizer.pad_token_id, reduction="sum")
+		self.loss_fct = torch.nn.CrossEntropyLoss(ignore_index=-100, reduction="sum")
 
 		if self.eval_model:
 			# Load the best checkpoint
@@ -176,15 +176,18 @@ class Experiment(object):
 				def handle_example():
 					if self.args.rap_prob and random.random() <= self.args.rap_prob:
 						if random.random() < 0.01:
-						# if random.random() < 1.0:
 							logger.info(f"\nEncoder sequence: {self.tokenizer.decode(inputs['input_ids'][0])}")
-							logger.info(f"Probing Decoder sequence: {self.tokenizer.decode(state_tgts['input_ids'][0])}\n")
+							output_seq = torch.clone(state_tgts['input_ids'][0])
+							output_seq.masked_fill_(output_seq == -100, self.tokenizer.pad_token_id)
+							logger.info(f"Probing Decoder sequence: {self.tokenizer.decode(output_seq)}\n")
 
 						target = state_tgts['input_ids']
 					else:
 						if random.random() < 0.01:
 							logger.info(f"\nEncoder sequence: {self.tokenizer.decode(inputs['input_ids'][0])}")
-							logger.info(f"Simple Decoder sequence: {self.tokenizer.decode(lang_tgts['input_ids'][0])}\n")
+							output_seq = torch.clone(lang_tgts['input_ids'][0])
+							output_seq.masked_fill_(output_seq == -100, self.tokenizer.pad_token_id)
+							logger.info(f"Simple Decoder sequence: {self.tokenizer.decode(output_seq)}\n")
 
 						target = lang_tgts['input_ids']
 
@@ -196,14 +199,16 @@ class Experiment(object):
 					lm_logits = return_dict.logits
 					lm_logits = lm_logits.view(-1, len(self.tokenizer))
 					loss = self.loss_fct(lm_logits, target.view(-1))
+					num_tokens = torch.sum((target != -100).to(torch.float)).item()
+					loss = loss/num_tokens
 
 					optimizer.zero_grad()
 					loss.backward()
 					optimizer.step()
 					optim_scheduler.step()
 
-					num_tokens = torch.sum((target != self.tokenizer.pad_token_id).to(torch.float)).item()
-					loss_val = loss.item()/num_tokens
+					loss_val = loss.item()
+					logger.info(f"{loss_val} {return_dict.loss.item()}")
 					lang_train_losses.append(loss_val)
 					self.train_info['global_steps'] += 1
 
@@ -259,7 +264,7 @@ class Experiment(object):
 					self.probing_tokens_mask, dtype=torch.float32, device=inputs['input_ids'].device)
 				lm_logits = lm_logits * (1 - logit_mask) + logit_mask * (-1e10)
 
-			num_tokens = torch.sum((lang_tgts['input_ids'] != self.tokenizer.pad_token_id).to(torch.float)).item()
+			num_tokens = torch.sum((lang_tgts['input_ids'] != -100).to(torch.float)).item()
 			lang_loss = self.loss_fct(lm_logits, lang_tgts['input_ids'].view(-1))
 			# logger.info(f"Manual loss: {lang_loss: .3f}, Automatic loss: {return_dict.loss: .3f}")
 			tot_val_loss += lang_loss.item()
