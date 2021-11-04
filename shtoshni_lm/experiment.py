@@ -91,7 +91,7 @@ class Experiment(object):
 		# loading data
 		self.dataset, _, _ = loadData(split="train", kind="alchemy", synthetic=False, base_dir=self.args.base_dir)
 		# TODO (Remove this)
-		self.dataset = self.dataset[:50]
+		# self.dataset = self.dataset[:50]
 		self.dev_dataset, _, _ = loadData(split="dev", kind="alchemy", synthetic=False, base_dir=self.args.base_dir)
 
 	def _load_previous_checkpoint(self, last_checkpoint=True):
