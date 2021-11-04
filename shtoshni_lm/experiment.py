@@ -196,11 +196,12 @@ class Experiment(object):
 						labels=target, return_dict=True,
 					)
 
-					lm_logits = return_dict.logits
-					lm_logits = lm_logits.view(-1, len(self.tokenizer))
-					loss = self.loss_fct(lm_logits, target.view(-1))
-					num_tokens = torch.sum((target != -100).to(torch.float)).item()
-					loss = loss/num_tokens
+					# lm_logits = return_dict.logits
+					# lm_logits = lm_logits.view(-1, len(self.tokenizer))
+					# loss = self.loss_fct(lm_logits, target.view(-1))
+					# num_tokens = torch.sum((target != -100).to(torch.float)).item()
+					# loss = loss/num_tokens
+					loss = return_dict.loss
 
 					optimizer.zero_grad()
 					loss.backward()
@@ -208,7 +209,7 @@ class Experiment(object):
 					optim_scheduler.step()
 
 					loss_val = loss.item()
-					logger.info(f"{loss_val} {return_dict.loss.item()}")
+					# logger.info(f"{loss_val} {return_dict.loss.item()}")
 					lang_train_losses.append(loss_val)
 					self.train_info['global_steps'] += 1
 
