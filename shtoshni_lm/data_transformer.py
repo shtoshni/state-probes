@@ -103,12 +103,14 @@ def convert_to_transformer_batches(
         #     # the first beaker has 1 red, the second beaker has 1 red
         #     inps = [", ".join([f"the {int_to_word[num]} beaker is empty" for num in range(7)]) + "." for _ in inps]
 
-        inp_enc = tokenizer(inps, return_tensors='pt', padding=True, truncation=True, return_offsets_mapping=True).to(device)
+        inp_enc = tokenizer(inps, return_tensors='pt', padding=True, truncation=False, return_offsets_mapping=True).to(device)
         lang_tgt_enc = tokenizer(lang_targets, return_tensors='pt', padding=True, truncation=True,
                                  add_special_tokens=False).to(device)
         inp_enc['original_text'] = inps
         lang_tgt_enc['original_text'] = lang_targets
-
+        lang_tgt_enc['input_ids'].masked_fill_(lang_tgt_enc['input_ids'] == tokenizer.pad_token_id, -100)
+        lang_tgt_enc['input_ids'].to(device)
+        # print(lang_tgt_enc['input_ids'])
         beaker_targets = identify_beaker_idx(prev_state_targets, subsequent_state_targets)
         for state_key in state_targets:
             state_tgt_enc = None
@@ -135,7 +137,11 @@ def convert_to_transformer_batches(
                         PROBE_START + " " + state_slice + " " + PROBE_END + " " + lang_target)
 
                 state_tgt_enc = tokenizer(
-                    target_list, return_tensors='pt', padding=True, truncation=True, add_special_tokens=False).to(device)
+                    target_list, return_tensors='pt', padding=True, truncation=False, add_special_tokens=False).to(device)
+                state_tgt_enc['input_ids'].masked_fill_(state_tgt_enc['input_ids'] == tokenizer.pad_token_id, -100)
+                state_tgt_enc['input_ids'].to(device)
+
+                # print(state_tgt_enc['input_ids'])
                 # print(state_tgt_enc)
                 # print(tokenizer.batch_decode(state_tgt_enc['input_ids']))
                 state_tgt_enc['key'] = state_key

@@ -4,3 +4,5 @@ textworld==1.4.0
 tqdm==4.60.0
 numpy==1.19.1
 python-Levenshtein==0.12.2
+regex~=2021.9.24
+wandb~=0.12.6
