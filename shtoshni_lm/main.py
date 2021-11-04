@@ -50,9 +50,10 @@ def main():
 
     if args.use_wandb:
         wandb.init(
-            id=model_dir_str, project="state-probing", config=vars(args), resume=True,
-            notes="State probing", tags="november",
+            id=model_dir_str, project="state-probing", resume=True,
+            notes="State probing", tags="november", config={},
         )
+        wandb.config.update(args)
 
     Experiment(args)
 

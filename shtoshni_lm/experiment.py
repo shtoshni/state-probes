@@ -222,6 +222,7 @@ class Experiment(object):
 			dev_loss = self.periodic_model_eval()
 			if self.args.use_wandb:
 				wandb.log({"dev/loss": dev_loss, 'batch': self.train_info['global_steps']})
+				wandb.log({"dev/best_loss": self.train_info['best_val_loss'], 'batch': self.train_info['global_steps']})
 
 			# Get elapsed time
 			elapsed_time = time.time() - start_time
@@ -248,9 +249,8 @@ class Experiment(object):
 				)
 		):
 			return_dict = model(input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
-								labels=lang_tgts['input_ids'], return_dict=True)
+			                    labels=lang_tgts['input_ids'], return_dict=True)
 
-			loss_fct = torch.nn.CrossEntropyLoss(ignore_index=self.tokenizer.pad_token_id, reduction="sum")
 			lm_logits = return_dict.logits
 			lm_logits = lm_logits.view(-1, len(self.tokenizer))
 
@@ -260,13 +260,13 @@ class Experiment(object):
 				lm_logits = lm_logits * (1 - logit_mask) + logit_mask * (-1e10)
 
 			num_tokens = torch.sum((lang_tgts['input_ids'] != self.tokenizer.pad_token_id).to(torch.float)).item()
-			lang_loss = loss_fct(lm_logits, lang_tgts['input_ids'].view(-1))
+			lang_loss = self.loss_fct(lm_logits, lang_tgts['input_ids'].view(-1))
 			# logger.info(f"Manual loss: {lang_loss: .3f}, Automatic loss: {return_dict.loss: .3f}")
 			tot_val_loss += lang_loss.item()
 			n_val += len(inputs['input_ids'])
 			total_tokens += num_tokens
 
-		# logger.info(f"n_val: {n_val}")
+		logger.info(f"Total instances: {n_val}, Num tokens: {total_tokens}")
 		avg_val_loss = tot_val_loss / total_tokens
 		return avg_val_loss
 
