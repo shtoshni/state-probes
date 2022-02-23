@@ -1,0 +1,6 @@
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/probing/run.sh /share/data/speech/shtoshni/research/state-probes/models/epochs_100_patience_10_state_0.1_targeted/best/doc_encoder
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/probing/run.sh /share/data/speech/shtoshni/research/state-probes/models/epochs_100_patience_10_state_0.25_targeted/best/doc_encoder
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/probing/run.sh /share/data/speech/shtoshni/research/state-probes/models/epochs_100_patience_10_state_0.5_targeted/best/doc_encoder
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/probing/run.sh /share/data/speech/shtoshni/research/state-probes/models/epochs_100_patience_10_state_0.1_all/best/doc_encoder
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/probing/run.sh /share/data/speech/shtoshni/research/state-probes/models/epochs_100_patience_10_state_0.25_all/best/doc_encoder
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/probing/run.sh /share/data/speech/shtoshni/research/state-probes/models/epochs_100_patience_10_state_0.5_all/best/doc_encoder

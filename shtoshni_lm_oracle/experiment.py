@@ -72,7 +72,7 @@ class Experiment(object):
 
 	def _build_model(self):
 		"""Constructs the model with given config."""
-		model_fp = f'facebook/bart-{self.args.model_size}'
+		model_fp = 'facebook/bart-base'
 		self.tokenizer = BartTokenizerFast.from_pretrained(model_fp)
 		self.model = BartForConditionalGeneration.from_pretrained(model_fp)
 
