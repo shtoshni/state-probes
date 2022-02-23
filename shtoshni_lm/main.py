@@ -41,11 +41,18 @@ def main():
     args.model_dir = path.join(args.base_model_dir, model_dir_str)
     args.best_model_dir = path.join(args.model_dir, "best")
 
+    # Set log dir
+    wandb_dir = path.join(args.model_dir, "wandb")
+    os.environ['WANDB_DIR'] = wandb_dir
+
     if not path.exists(args.model_dir):
         os.makedirs(args.model_dir)
 
     if not path.exists(args.best_model_dir):
         os.makedirs(args.best_model_dir)
+
+    if not path.exists(wandb_dir):
+        os.makedirs(wandb_dir)
 
     args.model_path = path.join(args.model_dir, "model.pt")
     args.best_model_path = path.join(args.best_model_dir, "model.pt")
