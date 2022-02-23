@@ -1,0 +1,6 @@
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --model_size small
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --model_size large
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --model_size small --add_state all --rap_prob 0.1
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --model_size small --add_state all --rap_prob 0.25
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --model_size large --add_state all --rap_prob 0.1
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --model_size large --add_state all --rap_prob 0.25
