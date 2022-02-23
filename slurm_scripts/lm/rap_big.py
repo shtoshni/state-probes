@@ -13,16 +13,18 @@ if not path.isdir(out_dir):
 out_file = path.join(out_dir, 'commands.txt')
 base_dir = "/share/data/speech/shtoshni/research/state-probes"
 
-fixed = ['--epochs 100 --patience 10 --use_wandb']
-state = ['--add_state ' + state_type for state_type in ['all', 'targeted']]
-rap_prob = [f'--rap_prob {rap_prob}' for rap_prob in [0.1, 0.25, 0.5]]
-model_size = [f'--model_size {model_size}' for model_size in ['base', 'large']]
-common_options = [fixed, state, rap_prob, model_size]
+fixed = ['--epochs 100 --patience 10 --use_wandb --model_size small',
+         '--epochs 100 --patience 10 --use_wandb --model_size large']
+state = ['--add_state ' + state_type for state_type in ['all']]
+rap_prob = [f'--rap_prob {rap_prob}' for rap_prob in [0.1, 0.25]]
+# model_size = [f'--model_size {model_size}' for model_size in ['base', 'large']]
+common_options = [fixed, state, rap_prob]
 
 
 with open(out_file, 'w') as out_f:
-    vanilla_comb = '{}/slurm_scripts/lm/run.sh '.format(base_dir) + fixed[0]
-    out_f.write(vanilla_comb + '\n')
+    for fixed_conf in fixed:
+        vanilla_comb = '{}/slurm_scripts/lm/run.sh '.format(base_dir) + fixed_conf
+        out_f.write(vanilla_comb + '\n')
 
     for option_comb in product(*common_options):
         # print(option_comb)
