@@ -1,0 +1,13 @@
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --add_state all --rap_prob 0.1 --model_size base
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --add_state all --rap_prob 0.1 --model_size large
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --add_state all --rap_prob 0.25 --model_size base
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --add_state all --rap_prob 0.25 --model_size large
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --add_state all --rap_prob 0.5 --model_size base
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --add_state all --rap_prob 0.5 --model_size large
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --add_state targeted --rap_prob 0.1 --model_size base
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --add_state targeted --rap_prob 0.1 --model_size large
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --add_state targeted --rap_prob 0.25 --model_size base
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --add_state targeted --rap_prob 0.25 --model_size large
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --add_state targeted --rap_prob 0.5 --model_size base
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --add_state targeted --rap_prob 0.5 --model_size large
