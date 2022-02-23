@@ -16,7 +16,6 @@ def main():
     parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--patience', type=int, default=2)
     parser.add_argument('--base_model_dir', type=str, default='models')
-    parser.add_argument('--model_size', type=str, default='base', choices=['base', 'large'])
     parser.add_argument('--base_dir', type=str, default=None)
     parser.add_argument('--use_wandb', default=False, action="store_true")
 
@@ -26,8 +25,7 @@ def main():
 
     args = parser.parse_args()
 
-    model_dir_str = "size_" + str(args.model_size)
-    model_dir_str += "_epochs_" + str(args.epochs)
+    model_dir_str = "epochs_" + str(args.epochs)
     model_dir_str += "_patience_" + str(args.patience)
 
     if args.rap_prob:
