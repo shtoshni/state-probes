@@ -314,8 +314,6 @@ class Experiment(object):
 		"""
 
 		checkpoint = torch.load(location, map_location='cpu')
-		self.args = checkpoint['args']
-
 		doc_encoder_dir = path.join(path.dirname(location), "doc_encoder")
 		logger.info("Loading document encoder from %s" % path.abspath(doc_encoder_dir))
 
