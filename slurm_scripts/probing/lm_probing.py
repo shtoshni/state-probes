@@ -14,12 +14,19 @@ out_file = path.join(out_dir, 'commands.txt')
 base_dir = "/share/data/speech/shtoshni/research/state-probes"
 
 model_paths = [
-'/share/data/speech/shtoshni/research/state-probes/models/epochs_100_patience_10_state_0.1_targeted/best/doc_encoder',
-'/share/data/speech/shtoshni/research/state-probes/models/epochs_100_patience_10_state_0.25_targeted/best/doc_encoder',
-'/share/data/speech/shtoshni/research/state-probes/models/epochs_100_patience_10_state_0.5_targeted/best/doc_encoder',
-'/share/data/speech/shtoshni/research/state-probes/models/epochs_100_patience_10_state_0.1_all/best/doc_encoder',
-'/share/data/speech/shtoshni/research/state-probes/models/epochs_100_patience_10_state_0.25_all/best/doc_encoder',
-'/share/data/speech/shtoshni/research/state-probes/models/epochs_100_patience_10_state_0.5_all/best/doc_encoder',
+# '/share/data/speech/shtoshni/research/state-probes/models/epochs_100_patience_10_state_0.1_targeted/best/doc_encoder',
+# '/share/data/speech/shtoshni/research/state-probes/models/epochs_100_patience_10_state_0.25_targeted/best/doc_encoder',
+# '/share/data/speech/shtoshni/research/state-probes/models/epochs_100_patience_10_state_0.5_targeted/best/doc_encoder',
+# '/share/data/speech/shtoshni/research/state-probes/models/epochs_100_patience_10_state_0.1_all/best/doc_encoder',
+# '/share/data/speech/shtoshni/research/state-probes/models/epochs_100_patience_10_state_0.25_all/best/doc_encoder',
+# '/share/data/speech/shtoshni/research/state-probes/models/epochs_100_patience_10_state_0.5_all/best/doc_encoder',
+'/share/data/speech/shtoshni/research/state-probes/models/size_base_epochs_100_patience_10_state_0.1_all/best'
+'/doc_encoder',
+'/share/data/speech/shtoshni/research/state-probes/models/size_base_epochs_100_patience_10_state_0.25_all/best/doc_encoder',
+'/share/data/speech/shtoshni/research/state-probes/models/size_large_epochs_100_patience_10_state_0.1_all/best'
+'/doc_encoder',
+'/share/data/speech/shtoshni/research/state-probes/models/size_large_epochs_100_patience_10_state_0.25_all/best'
+'/doc_encoder',
 ]
 
 common_options = [model_paths]
