@@ -15,6 +15,7 @@ import numpy as np
 from data.alchemy.parseScone import loadData
 from data_transformer import convert_to_transformer_batches
 from transformers import get_linear_schedule_with_warmup
+from shtoshni_probing.config import PROBE_START, PROBE_END
 
 logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger()
@@ -81,7 +82,7 @@ class Experiment(object):
 
 		if self.args.rap_prob:
 			self.tokenizer.add_special_tokens({
-				'additional_special_tokens': ['[PROBE_START]', '[PROBE_END]']
+				'additional_special_tokens': [PROBE_START, PROBE_END]
 			})
 			self.model.resize_token_embeddings(len(self.tokenizer))
 			# Mask to mask out these additional tokens

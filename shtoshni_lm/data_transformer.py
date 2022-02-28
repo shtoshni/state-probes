@@ -5,8 +5,7 @@ from transformers import BartTokenizerFast, T5TokenizerFast
 
 from data.alchemy.utils import int_to_word
 
-PROBE_START = '[PROBE_START]'
-PROBE_END = '[PROBE_END]'
+from shtoshni_probing.config import PROBE_START, PROBE_END
 
 
 def identify_beaker_idx(state_targets, subsequent_state_targets):

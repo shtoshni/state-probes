@@ -9,6 +9,7 @@ from transformers import BartForConditionalGeneration, BartConfig, BartTokenizer
 from data.alchemy.utils import int_to_word, colors
 from data_transformer import convert_to_transformer_batches
 from data.alchemy.parseScone import loadData
+from shtoshni_probing.config import PROBE_START, PROBE_END
 
 
 logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
@@ -61,7 +62,7 @@ def get_all_states(tokenizer, device):
 	for idx in range(len(int_to_word)):
 		beaker_str = int_to_word[idx]
 		prefix = f"the {beaker_str} beaker "
-		state_seqs = [('[PROBE_START]' + prefix + state_suffix + '[PROBE_END]') for state_suffix in state_suffixes]
+		state_seqs = [(PROBE_START + prefix + state_suffix + PROBE_END) for state_suffix in state_suffixes]
 
 		state_seq_ids = tokenizer.batch_encode_plus(
 			state_seqs, padding=True, add_special_tokens=False, return_tensors='pt')['input_ids'].to(device)
