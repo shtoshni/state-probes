@@ -113,45 +113,43 @@ def convert_to_transformer_batches(
         beaker_targets = identify_beaker_idx(prev_state_targets, subsequent_state_targets)
 
         for state_key in state_targets:
-            state_tgt_enc = None
-            if random:
-                target_list = []
-                for (state_target, lang_target, beaker_target) in zip(
-                        state_targets[state_key], lang_targets, beaker_targets):
-                    if add_state == 'all':
-                        # Randomize the state slice
-                        beaker_states = state_target.split(", ")
-                        random.shuffle(beaker_states)
-                        state_slice = ", ".join(beaker_states)
-                    elif add_state == 'targeted':
-                        # beaker_idx = identify_beaker_idx(lang_target)
-                        if beaker_target == -1:
-                            state_slice = random.choice(state_target.split(","))
-                        else:
-                            state_slice = state_target.split(",")[beaker_target]
-                    elif add_state == 'random':
+            target_list = []
+            for (state_target, lang_target, beaker_target) in zip(
+                    state_targets[state_key], lang_targets, beaker_targets):
+                if add_state == 'all':
+                    # Randomize the state slice
+                    beaker_states = state_target.split(", ")
+                    random.shuffle(beaker_states)
+                    state_slice = ", ".join(beaker_states)
+                elif add_state == 'targeted':
+                    # beaker_idx = identify_beaker_idx(lang_target)
+                    if beaker_target == -1:
                         state_slice = random.choice(state_target.split(","))
                     else:
-                        raise ValueError(add_state)
-                    target_list.append(
-                        PROBE_START + " " + state_slice + " " + PROBE_END + " " + lang_target)
+                        state_slice = state_target.split(",")[beaker_target]
+                elif add_state == 'random':
+                    state_slice = random.choice(state_target.split(","))
+                else:
+                    raise ValueError(add_state)
+                target_list.append(
+                    PROBE_START + " " + state_slice + " " + PROBE_END + " " + lang_target)
 
-                state_tgt_enc = tokenizer(
-                    target_list, return_tensors='pt', padding=True, truncation=False, add_special_tokens=False).to(device)
-                state_tgt_enc['input_ids'].masked_fill_(state_tgt_enc['input_ids'] == tokenizer.pad_token_id, -100)
-                state_tgt_enc['input_ids'].to(device)
+            state_tgt_enc = tokenizer(
+                target_list, return_tensors='pt', padding=True, truncation=False, add_special_tokens=False).to(device)
+            state_tgt_enc['input_ids'].masked_fill_(state_tgt_enc['input_ids'] == tokenizer.pad_token_id, -100)
+            state_tgt_enc['input_ids'].to(device)
 
-                if eval:
-                    probe_end_token = tokenizer.convert_tokens_to_ids(PROBE_END)
-                    probe_end_token_idx = (state_tgt_enc['input_ids'] == probe_end_token).nonzero(as_tuple=True)[0].unsqueeze(1)
-                    batch_size = state_tgt_enc['input_ids'].size()[0]
-                    max_len = state_tgt_enc['input_ids'].size()[1]
-                    tmp = torch.arange(max_len, device=state_tgt_enc['input_ids'].device).expand(batch_size, max_len)
+            if eval:
+                probe_end_token = tokenizer.convert_tokens_to_ids(PROBE_END)
+                probe_end_token_idx = (state_tgt_enc['input_ids'] == probe_end_token).nonzero(as_tuple=True)[0].unsqueeze(1)
+                batch_size = state_tgt_enc['input_ids'].size()[0]
+                max_len = state_tgt_enc['input_ids'].size()[1]
+                tmp = torch.arange(max_len, device=state_tgt_enc['input_ids'].device).expand(batch_size, max_len)
 
-                    # Mask out input ids before the probing sequence
-                    state_tgt_enc['input_ids'][tmp <= probe_end_token_idx] = -100
+                # Mask out input ids before the probing sequence
+                state_tgt_enc['input_ids'][tmp <= probe_end_token_idx] = -100
 
-                state_tgt_enc['key'] = state_key
+            state_tgt_enc['key'] = state_key
 
             inp_enc['state_key'] = state_key
             yield inp_enc, lang_tgt_enc, state_tgt_enc, state_targets, init_states
