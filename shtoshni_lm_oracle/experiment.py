@@ -72,7 +72,7 @@ class Experiment(object):
 
 	def _build_model(self):
 		"""Constructs the model with given config."""
-		model_fp = 'facebook/bart-base'
+		model_fp = f'facebook/bart-{self.args.model_size}'
 		self.tokenizer = BartTokenizerFast.from_pretrained(model_fp)
 		self.model = BartForConditionalGeneration.from_pretrained(model_fp)
 
@@ -314,8 +314,6 @@ class Experiment(object):
 		"""
 
 		checkpoint = torch.load(location, map_location='cpu')
-		self.args = checkpoint['args']
-
 		doc_encoder_dir = path.join(path.dirname(location), "doc_encoder")
 		logger.info("Loading document encoder from %s" % path.abspath(doc_encoder_dir))
 

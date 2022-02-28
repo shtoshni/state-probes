@@ -16,16 +16,18 @@ def main():
     parser.add_argument('--epochs', type=int, default=10)
     parser.add_argument('--patience', type=int, default=2)
     parser.add_argument('--base_model_dir', type=str, default='models')
+    parser.add_argument('--model_size', type=str, default='base', choices=['base', 'large'])
     parser.add_argument('--base_dir', type=str, default=None)
     parser.add_argument('--use_wandb', default=False, action="store_true")
 
-    parser.add_argument('--rap_prob', default=0.0, type=float)
+    parser.add_argument('--rap_prob', default=1.0, type=float)
     parser.add_argument('--add_state', choices=['all', 'targeted', 'random'], type=str, default='targeted')
     parser.add_argument('--state_repr', default="text", choices=["text", "raw"], type=str)
 
     args = parser.parse_args()
 
-    model_dir_str = "epochs_" + str(args.epochs)
+    model_dir_str = "oracle_size_" + str(args.model_size)
+    model_dir_str += "_epochs_" + str(args.epochs)
     model_dir_str += "_patience_" + str(args.patience)
 
     if args.rap_prob:
@@ -39,11 +41,18 @@ def main():
     args.model_dir = path.join(args.base_model_dir, model_dir_str)
     args.best_model_dir = path.join(args.model_dir, "best")
 
+    # Set log dir
+    wandb_dir = path.join(args.model_dir, "wandb")
+    os.environ['WANDB_DIR'] = wandb_dir
+
     if not path.exists(args.model_dir):
         os.makedirs(args.model_dir)
 
     if not path.exists(args.best_model_dir):
         os.makedirs(args.best_model_dir)
+
+    if not path.exists(wandb_dir):
+        os.makedirs(wandb_dir)
 
     args.model_path = path.join(args.model_dir, "model.pt")
     args.best_model_path = path.join(args.best_model_dir, "model.pt")

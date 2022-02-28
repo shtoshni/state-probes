@@ -1,4 +1,5 @@
 
+import torch
 from data.alchemy.utils import int_to_word, decide_translate, translate_states_to_nl
 from data.alchemy.parseScone import getBatchesWithInit
 from transformers import BartTokenizerFast, T5TokenizerFast
@@ -110,6 +111,7 @@ def convert_to_transformer_batches(
         lang_tgt_enc['input_ids'].to(device)
         # print(lang_tgt_enc['input_ids'])
         beaker_targets = identify_beaker_idx(prev_state_targets, subsequent_state_targets)
+
         for state_key in state_targets:
             state_tgt_enc = None
             if random:
@@ -136,12 +138,18 @@ def convert_to_transformer_batches(
 
                 state_tgt_enc = tokenizer(
                     target_list, return_tensors='pt', padding=True, truncation=False, add_special_tokens=False).to(device)
+
                 state_tgt_enc['input_ids'].masked_fill_(state_tgt_enc['input_ids'] == tokenizer.pad_token_id, -100)
+                probe_end_token = tokenizer.convert_tokens_to_ids(PROBE_END)
+                probe_end_token_idx = (state_tgt_enc['input_ids'] == probe_end_token).nonzero(as_tuple=True)[0].unsqueeze(1)
+                batch_size = state_tgt_enc['input_ids'].size()[0]
+                max_len = state_tgt_enc['input_ids'].size()[1]
+                tmp = torch.arange(max_len, device=state_tgt_enc['input_ids'].device).expand(batch_size, max_len)
+
+                # Mask out input ids before the probing sequence
+                state_tgt_enc['input_ids'][tmp <= probe_end_token_idx] = -100
                 state_tgt_enc['input_ids'].to(device)
 
-                # print(state_tgt_enc['input_ids'])
-                # print(state_tgt_enc)
-                # print(tokenizer.batch_decode(state_tgt_enc['input_ids']))
                 state_tgt_enc['key'] = state_key
 
             inp_enc['state_key'] = state_key
