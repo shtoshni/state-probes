@@ -282,7 +282,14 @@ class Experiment(object):
 			other_num_tokens = torch.sum((lang_tgts['input_ids'] != -100).to(torch.float)).item()
 			if num_tokens != other_num_tokens:
 				print(num_tokens, other_num_tokens)
-				print(torch.sum(state_tgts['tgts'] != -100, dim=1) - torch.sum(lang_tgts['input_ids'] != -100, dim=1))
+				diff = torch.sum(state_tgts['tgts'] != -100, dim=1) - torch.sum(lang_tgts['input_ids'] != -100, dim=1)
+				idx = diff.nonzero(as_tuple=True)[0][0].item
+
+				for seq in [state_tgts['tgts'], lang_tgts['input_ids']]:
+					output_seq = torch.clone(seq[idx])
+					logger.info(output_seq)
+					output_seq.masked_fill_(output_seq == -100, self.tokenizer.pad_token_id)
+					logger.info(f"Diff Sequence: {self.tokenizer.decode(output_seq)}\n")
 
 			lang_loss = self.loss_fct(lm_logits, state_tgts['tgts'].view(-1))
 			# logger.info(f"Manual loss: {lang_loss: .3f}, Automatic loss: {return_dict.loss: .3f}")
