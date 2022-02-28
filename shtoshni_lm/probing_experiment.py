@@ -109,6 +109,7 @@ def probing_exp(model_path: str, base_dir: str):
 			lang_loss = torch.sum(lang_loss.reshape_as(all_seq), dim=1)
 
 			argmin = torch.argmin(lang_loss, dim=0).item()
+			print(all_seq[argmin])
 			pred_state = tokenizer.decode(all_seq[argmin], skip_special_tokens=True).strip()
 			gt_state = state_target_str[seq_idx].strip()
 
