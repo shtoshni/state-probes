@@ -27,7 +27,7 @@ with open(out_file, 'w') as out_f:
 
     for option_comb in product(*common_options):
         # print(option_comb)
-        base = '{}/slurm_scripts/lm/run.sh '.format(base_dir)
+        base = '{}/slurm_scripts/lm/oracle_run.sh '.format(base_dir)
         cur_command = base
         for value in option_comb:
             cur_command += (value + " ")
