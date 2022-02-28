@@ -141,7 +141,8 @@ def convert_to_transformer_batches(
 
             if eval:
                 probe_end_token = tokenizer.convert_tokens_to_ids(PROBE_END)
-                probe_end_token_idx = (state_tgt_enc['input_ids'] == probe_end_token).nonzero(as_tuple=True)[0].unsqueeze(1)
+                probe_end_token_idx = (state_tgt_enc['input_ids'] ==
+                                       probe_end_token).nonzero(as_tuple=True)[1].unsqueeze(1)
                 batch_size = state_tgt_enc['input_ids'].size()[0]
                 max_len = state_tgt_enc['input_ids'].size()[1]
                 tmp = torch.arange(max_len, device=state_tgt_enc['input_ids'].device).expand(batch_size, max_len)
