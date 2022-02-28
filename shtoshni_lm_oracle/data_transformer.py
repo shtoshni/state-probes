@@ -150,6 +150,7 @@ def convert_to_transformer_batches(
                 # print(tmp <= probe_end_token_idx)
                 state_tgt_enc['input_ids'][tmp <= probe_end_token_idx] = -100
                 print(state_tgt_enc['input_ids'][0], probe_end_token_idx[0])
+                print(probe_end_token_idx)
 
             state_tgt_enc['key'] = state_key
 
