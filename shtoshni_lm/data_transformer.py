@@ -132,7 +132,7 @@ def convert_to_transformer_batches(
                     else:
                         raise ValueError(add_state)
                     target_list.append(
-                        PROBE_START + " " + state_slice + " " + PROBE_END + " " + lang_target)
+                        PROBE_START + " " + state_slice + " " + PROBE_END + lang_target)
 
                 state_tgt_enc = tokenizer(
                     target_list, return_tensors='pt', padding=True, truncation=False, add_special_tokens=False).to(device)
