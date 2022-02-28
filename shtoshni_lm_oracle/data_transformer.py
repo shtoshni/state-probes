@@ -140,16 +140,17 @@ def convert_to_transformer_batches(
             state_tgt_enc['input_ids'].to(device)
 
             if eval:
+                state_tgt_enc['tgts'] = state_tgt_enc['input_ids'].clone()
                 probe_end_token = tokenizer.convert_tokens_to_ids(PROBE_END)
-                probe_end_token_idx = (state_tgt_enc['input_ids'] ==
+                probe_end_token_idx = (state_tgt_enc['tgts'] ==
                                        probe_end_token).nonzero(as_tuple=True)[1].unsqueeze(1)
-                batch_size = state_tgt_enc['input_ids'].size()[0]
-                max_len = state_tgt_enc['input_ids'].size()[1]
-                tmp = torch.arange(max_len, device=state_tgt_enc['input_ids'].device).expand(batch_size, max_len)
+                batch_size = state_tgt_enc['tgts'].size()[0]
+                max_len = state_tgt_enc['tgts'].size()[1]
+                tmp = torch.arange(max_len, device=state_tgt_enc['tgts'].device).expand(batch_size, max_len)
 
                 # Mask out input ids before the probing sequence
                 # print(tmp <= probe_end_token_idx)
-                state_tgt_enc['input_ids'][tmp <= probe_end_token_idx] = -100
+                state_tgt_enc['tgts'][tmp <= probe_end_token_idx] = -100
                 # print(state_tgt_enc['input_ids'][0], probe_end_token_idx[0])
                 # print(probe_end_token_idx)
 
