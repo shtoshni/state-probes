@@ -21,10 +21,6 @@ common_options = [fixed, state]
 
 
 with open(out_file, 'w') as out_f:
-    for fixed_conf in fixed:
-        vanilla_comb = '{}/slurm_scripts/lm/run.sh '.format(base_dir) + fixed_conf
-        out_f.write(vanilla_comb + '\n')
-
     for option_comb in product(*common_options):
         # print(option_comb)
         base = '{}/slurm_scripts/lm/oracle_run.sh '.format(base_dir)
