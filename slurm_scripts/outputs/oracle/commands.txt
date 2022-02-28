@@ -1,0 +1,8 @@
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --model_size base --seed 45
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --model_size large --seed 45
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --model_size base --seed 45 --add_state all
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --model_size base --seed 45 --add_state targeted
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --model_size base --seed 45 --add_state random
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --model_size large --seed 45 --add_state all
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --model_size large --seed 45 --add_state targeted
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/run.sh --epochs 100 --patience 10 --use_wandb --model_size large --seed 45 --add_state random
