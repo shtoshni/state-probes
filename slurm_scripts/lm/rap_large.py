@@ -3,7 +3,7 @@ from os import path
 import os
 import subprocess
 
-JOB_NAME = f'rap_big'
+JOB_NAME = f'rap_large'
 
 out_dir = path.join(os.getcwd(), f'slurm_scripts/outputs/{JOB_NAME}')
 if not path.isdir(out_dir):
@@ -13,11 +13,10 @@ if not path.isdir(out_dir):
 out_file = path.join(out_dir, 'commands.txt')
 base_dir = "/share/data/speech/shtoshni/research/state-probes"
 
-fixed = ['--epochs 100 --patience 10 --use_wandb --model_size base',
-         '--epochs 100 --patience 10 --use_wandb --model_size large']
-state = ['--add_state ' + state_type for state_type in ['all']]
-rap_prob = [f'--rap_prob {rap_prob}' for rap_prob in [0.1, 0.25]]
-# model_size = [f'--model_size {model_size}' for model_size in ['base', 'large']]
+fixed = ['--epochs 100 --patience 10 --use_wandb --model_size large --seed 50']
+state = ['--add_state ' + state_type for state_type in ['all', 'targeted']]
+rap_prob = [f'--rap_prob {rap_prob}' for rap_prob in [0.1, 0.25, 0.5, 0.75]]
+
 common_options = [fixed, state, rap_prob]
 
 
