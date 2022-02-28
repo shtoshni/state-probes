@@ -61,7 +61,7 @@ def get_all_states(tokenizer, device):
 	for idx in range(len(int_to_word)):
 		beaker_str = int_to_word[idx]
 		prefix = f"the {beaker_str} beaker "
-		state_seqs = [('</s>[PROBE_START]' + prefix + state_suffix + '[PROBE_END]') for state_suffix in state_suffixes]
+		state_seqs = [('[PROBE_START]' + prefix + state_suffix + '[PROBE_END]') for state_suffix in state_suffixes]
 
 		state_seq_ids = tokenizer.batch_encode_plus(
 			state_seqs, padding=True, add_special_tokens=False, return_tensors='pt')['input_ids'].to(device)
@@ -109,7 +109,6 @@ def probing_exp(model_path: str, base_dir: str):
 			lang_loss = torch.sum(lang_loss.reshape_as(all_seq), dim=1)
 
 			argmin = torch.argmin(lang_loss, dim=0).item()
-			print(all_seq[argmin])
 			pred_state = tokenizer.decode(all_seq[argmin], skip_special_tokens=True).strip()
 			gt_state = state_target_str[seq_idx].strip()
 
