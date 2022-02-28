@@ -118,6 +118,7 @@ def convert_to_transformer_batches(
                     state_targets[state_key], lang_targets, beaker_targets):
                 if add_state == 'all':
                     beaker_states = state_target.split(", ")
+                    random.shuffle(beaker_states)
                     state_slice = ", ".join(beaker_states)
                 elif add_state == 'targeted':
                     # beaker_idx = identify_beaker_idx(lang_target)
