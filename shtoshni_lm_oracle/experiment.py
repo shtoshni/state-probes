@@ -251,11 +251,11 @@ class Experiment(object):
 		for j, (inputs, lang_tgts, state_tgts, raw_state_targets, init_states) in enumerate(
 				convert_to_transformer_batches(
 					dataset, self.tokenizer, self.args.batchsize,
-					domain="alchemy", device=self.device, add_state=self.args.add_state,
+					domain="alchemy", device=self.device, add_state=self.args.add_state, eval=True,
 				)
 		):
 			return_dict = model(input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
-			                    labels=lang_tgts['input_ids'], return_dict=True)
+			                    labels=state_tgts['input_ids'], return_dict=True)
 
 			lm_logits = return_dict.logits
 			lm_logits = lm_logits.view(-1, len(self.tokenizer))
