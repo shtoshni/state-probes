@@ -1,0 +1,3 @@
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/oracle_run.sh --epochs 100 --patience 10 --use_wandb --model_size base --seed 45 --add_state all
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/oracle_run.sh --epochs 100 --patience 10 --use_wandb --model_size base --seed 45 --add_state targeted
+/share/data/speech/shtoshni/research/state-probes/slurm_scripts/lm/oracle_run.sh --epochs 100 --patience 10 --use_wandb --model_size base --seed 45 --add_state random
