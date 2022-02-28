@@ -13,7 +13,7 @@ if not path.isdir(out_dir):
 out_file = path.join(out_dir, 'commands.txt')
 base_dir = "/share/data/speech/shtoshni/research/state-probes"
 
-fixed = ['--epochs 100 --patience 10 --use_wandb --model_size base --seed 45',]
+fixed = ['--epochs 100 --patience 10 --use_wandb --model_size base --seed 60',]
          # '--epochs 100 --patience 10 --use_wandb --model_size large --seed 45']
 state = ['--add_state ' + state_type for state_type in ['all', 'targeted', 'random']]
 rap_prob = [f'--rap_prob {rap_prob}' for rap_prob in [0.1, 0.25, 0.5, 0.75]]

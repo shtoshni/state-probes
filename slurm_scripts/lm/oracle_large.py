@@ -3,7 +3,7 @@ from os import path
 import os
 import subprocess
 
-JOB_NAME = f'oracle_base'
+JOB_NAME = f'oracle_large'
 
 out_dir = path.join(os.getcwd(), f'slurm_scripts/outputs/{JOB_NAME}')
 if not path.isdir(out_dir):
@@ -13,7 +13,7 @@ if not path.isdir(out_dir):
 out_file = path.join(out_dir, 'commands.txt')
 base_dir = "/share/data/speech/shtoshni/research/state-probes"
 
-fixed = ['--epochs 100 --patience 10 --use_wandb --model_size base --seed 60',]
+fixed = ['--epochs 100 --patience 10 --use_wandb --model_size large --seed 60',]
          # '--epochs 100 --patience 10 --use_wandb --model_size large --seed 45']
 state = ['--add_state ' + state_type for state_type in ['all', 'targeted', 'random']]
 
@@ -32,6 +32,6 @@ with open(out_file, 'w') as out_f:
         out_f.write(cur_command + '\n')
 
 subprocess.call(
-    "cd {}; python ~/slurm_batch.py {} -J {} --constraint 2080ti".format(out_dir, out_file,
+    "cd {}; python ~/slurm_batch.py {} -J {} --constraint a6000".format(out_dir, out_file,
                                                                                             JOB_NAME),
     shell=True)
