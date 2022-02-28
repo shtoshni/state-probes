@@ -283,7 +283,7 @@ class Experiment(object):
 			if num_tokens != other_num_tokens:
 				print(num_tokens, other_num_tokens)
 				diff = torch.sum(state_tgts['tgts'] != -100, dim=1) - torch.sum(lang_tgts['input_ids'] != -100, dim=1)
-				idx = diff.nonzero(as_tuple=True)[0][0].item
+				idx = diff.nonzero(as_tuple=True)[0][0].item()
 
 				print(diff)
 				print(diff.nonzero(as_tuple=True)[0])
