@@ -260,6 +260,7 @@ class Experiment(object):
 			if random.random() < 0.5:
 				logger.info(f"\nEncoder sequence: {self.tokenizer.decode(inputs['input_ids'][0])}")
 				output_seq = torch.clone(state_tgts['input_ids'][0])
+				logger.info(output_seq)
 				output_seq.masked_fill_(output_seq == -100, self.tokenizer.pad_token_id)
 				logger.info(f"Probing Decoder sequence: {self.tokenizer.decode(output_seq)}\n")
 
