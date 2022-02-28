@@ -147,8 +147,9 @@ def convert_to_transformer_batches(
                 tmp = torch.arange(max_len, device=state_tgt_enc['input_ids'].device).expand(batch_size, max_len)
 
                 # Mask out input ids before the probing sequence
-                print(tmp <= probe_end_token_idx)
+                # print(tmp <= probe_end_token_idx)
                 state_tgt_enc['input_ids'][tmp <= probe_end_token_idx] = -100
+                print(state_tgt_enc['input_ids'])
 
             state_tgt_enc['key'] = state_key
 
