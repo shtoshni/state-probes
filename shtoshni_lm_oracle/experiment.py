@@ -251,7 +251,7 @@ class Experiment(object):
 
 		for j, (inputs, lang_tgts, state_tgts, raw_state_targets, init_states) in enumerate(
 				convert_to_transformer_batches(
-					dataset, self.tokenizer, self.args.batchsize,
+					dataset, self.tokenizer, self.args.batchsize, random=random,
 					domain="alchemy", device=self.device, add_state=self.args.add_state, eval=True,
 				)
 		):
