@@ -14,6 +14,7 @@ def main():
     parser.add_argument('--eval', default=False, action="store_true")
     parser.add_argument('--seed', type=int, default=10)
     parser.add_argument('--epochs', type=int, default=10)
+    parser.add_argument('--num_train', type=int, default=None)
     parser.add_argument('--patience', type=int, default=2)
     parser.add_argument('--base_model_dir', type=str, default='models')
     parser.add_argument('--model_size', type=str, default='base', choices=['base', 'large'])
@@ -35,6 +36,9 @@ def main():
         model_dir_str += f"_{args.rap_prob}"
         model_dir_str += f"_{args.add_state}"
         model_dir_str += f"_{args.state_repr}"
+
+    if args.num_train is not None:
+        model_dir_str += f"_num_train_{args.num_train}"
 
     model_dir_str += f"_seed_{args.seed}"
 
