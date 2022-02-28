@@ -90,8 +90,8 @@ class Experiment(object):
 	def _load_data(self):
 		# loading data
 		self.dataset, _, _ = loadData(split="train", kind="alchemy", synthetic=False, base_dir=self.args.base_dir)
-		# TODO (Remove this)
-		# self.dataset = self.dataset[:50]
+		if self.args.num_train is not None:
+			self.dataset = self.dataset[:self.args.num_train]
 		self.dev_dataset, _, _ = loadData(split="dev", kind="alchemy", synthetic=False, base_dir=self.args.base_dir)
 
 	def _load_previous_checkpoint(self, last_checkpoint=True):
