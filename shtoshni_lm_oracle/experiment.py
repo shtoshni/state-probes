@@ -258,12 +258,17 @@ class Experiment(object):
 			return_dict = model(input_ids=inputs['input_ids'], attention_mask=inputs['attention_mask'],
 			                    labels=state_tgts['input_ids'], return_dict=True)
 
-			if random.random() < 0.5:
+			if random.random() < 0.1:
 				logger.info(f"\nEncoder sequence: {self.tokenizer.decode(inputs['input_ids'][0])}")
 				output_seq = torch.clone(state_tgts['input_ids'][0])
 				logger.info(output_seq)
 				output_seq.masked_fill_(output_seq == -100, self.tokenizer.pad_token_id)
 				logger.info(f"Probing Decoder sequence: {self.tokenizer.decode(output_seq)}\n")
+
+				loss_seq = torch.clone(state_tgts['tgts'][0])
+				logger.info(output_seq)
+				output_seq.masked_fill_(output_seq == -100, self.tokenizer.pad_token_id)
+				logger.info(f"Loss Decoder sequence: {self.tokenizer.decode(output_seq)}\n")
 
 			lm_logits = return_dict.logits
 			lm_logits = lm_logits.view(-1, len(self.tokenizer))
