@@ -266,9 +266,9 @@ class Experiment(object):
 				logger.info(f"Probing Decoder sequence: {self.tokenizer.decode(output_seq)}\n")
 
 				loss_seq = torch.clone(state_tgts['tgts'][0])
-				logger.info(output_seq)
-				output_seq.masked_fill_(output_seq == -100, self.tokenizer.pad_token_id)
-				logger.info(f"Loss Decoder sequence: {self.tokenizer.decode(output_seq)}\n")
+				logger.info(loss_seq)
+				loss_seq.masked_fill_(loss_seq == -100, self.tokenizer.pad_token_id)
+				logger.info(f"Loss Decoder sequence: {self.tokenizer.decode(loss_seq)}\n")
 
 			lm_logits = return_dict.logits
 			lm_logits = lm_logits.view(-1, len(self.tokenizer))
