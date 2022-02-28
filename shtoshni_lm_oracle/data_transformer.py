@@ -120,6 +120,7 @@ def convert_to_transformer_batches(
                     # Randomize the state slice
                     print(state_target)
                     beaker_states = state_target.split(", ")
+                    print(beaker_states)
                     random.shuffle(beaker_states)
                     state_slice = ", ".join(beaker_states)
                 elif add_state == 'targeted':
