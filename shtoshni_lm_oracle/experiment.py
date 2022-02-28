@@ -272,7 +272,7 @@ class Experiment(object):
 				lm_logits = lm_logits * (1 - logit_mask) + logit_mask * (-1e10)
 
 			num_tokens = torch.sum((lang_tgts['input_ids'] != -100).to(torch.float)).item()
-			lang_loss = self.loss_fct(lm_logits, lang_tgts['input_ids'].view(-1))
+			lang_loss = self.loss_fct(lm_logits, state_tgts['input_ids'].view(-1))
 			# logger.info(f"Manual loss: {lang_loss: .3f}, Automatic loss: {return_dict.loss: .3f}")
 			tot_val_loss += lang_loss.item()
 			n_val += len(inputs['input_ids'])
