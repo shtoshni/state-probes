@@ -108,7 +108,8 @@ def probing_exp(model_path: str, base_dir: str):
 
 		state_target_str = raw_state_targets['full_state'][0].split(", ")
 		output[j] = {'input': inputs['original_text'][0],
-		             'init_state': inputs['init_state'][0],
+		             'init_state': inputs['init_state'][0].split(", "),
+		             "steps": inputs['steps'][0].split(". "),
 		             'output': []}
 		for seq_idx, all_seq in enumerate(all_seqs):
 			return_dict = model(input_ids=inputs['input_ids'].repeat(num_states, 1).to(device),
@@ -123,7 +124,9 @@ def probing_exp(model_path: str, base_dir: str):
 			pred_state = tokenizer.decode(all_seq[argmin], skip_special_tokens=True).strip()
 			gt_state = state_target_str[seq_idx].strip()
 
-			output[j]['output'].append({'pred': pred_state, 'gt': gt_state, 'corr': pred_state == gt_state})
+			output[j]['output'].append(
+				{'pred': pred_state, 'gt': gt_state, 'corr': pred_state == gt_state,
+				 'same_as_init': output[j]['init_state'][seq_idx] == gt_state})
 			logger.info(f"{pred_state}, {gt_state}")
 			if pred_state == gt_state:
 				corr += 1

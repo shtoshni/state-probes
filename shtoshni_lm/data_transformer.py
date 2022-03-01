@@ -78,8 +78,10 @@ def convert_to_transformer_batches(
         # make inputs
         inps = []
         init_states_str = []
+        steps = []
         for i, inp in enumerate(inputs):
             string = ' '.join(inp).replace(' \n ', '. ')
+            steps.append(string)
             init_state = translate_states_to_nl(
                 init_states[i], domain, isinstance(tokenizer, BartTokenizerFast))
             init_states_str.append(init_state)
@@ -101,6 +103,8 @@ def convert_to_transformer_batches(
                                  add_special_tokens=False).to(device)
         inp_enc['original_text'] = inps
         inp_enc['init_state'] = init_states_str
+        inp_enc['steps'] = steps
+
         lang_tgt_enc['original_text'] = lang_targets
         lang_tgt_enc['input_ids'].masked_fill_(lang_tgt_enc['input_ids'] == tokenizer.pad_token_id, -100)
         lang_tgt_enc['input_ids'].to(device)
