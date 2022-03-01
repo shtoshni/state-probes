@@ -54,4 +54,4 @@ with open(out_file, 'w') as out_f:
         out_f.write(cur_command + '\n')
 
 subprocess.call(
-    "cd {}; python ~/slurm_batch.py {} -J {}".format(out_dir, out_file, JOB_NAME), shell=True)
+    "cd {}; python ~/slurm_batch.py {} -J {} --constraint 2080ti".format(out_dir, out_file, JOB_NAME), shell=True)
