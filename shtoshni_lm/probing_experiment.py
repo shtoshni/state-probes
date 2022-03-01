@@ -106,10 +106,8 @@ def probing_exp(model_path: str, base_dir: str):
 					convert_to_transformer_batches(dev_dataset, tokenizer, 1, domain="alchemy", device=device,
 					                               state_targets_type='state.NL')):
 
-		# print(raw_state_targets, tokenizer.batch_decode(inputs['input_ids']))
 		state_target_str = raw_state_targets['full_state'][0].split(", ")
-		# print(raw_state_targets)
-		output[j] = {'state': raw_state_targets['full_state'][0], 'output': []}
+		output[j] = {'input': inputs['original_text'], 'output': []}
 		for seq_idx, all_seq in enumerate(all_seqs):
 			return_dict = model(input_ids=inputs['input_ids'].repeat(num_states, 1).to(device),
 			                    attention_mask=inputs['attention_mask'].repeat(num_states, 1).to(device),
@@ -129,15 +127,15 @@ def probing_exp(model_path: str, base_dir: str):
 				corr += 1
 			total += 1
 
-			# break
+			if total >= 21:
+				break
+
 		logger.info(f"Total: {total}, Correct: {corr}")
-		# if j == 10:
-		# 	break
 
 	wandb.log({"dev/probing_acc": corr*100/total})
 	wandb.log({"dev/probing_corr": corr})
 
-	output_file = path.join(model_path, "dev.jsonl")
+	output_file = path.join(path.dirname(path.dirname(model_path)), "dev.jsonl")
 	logging.info(f'Output_file: {path.abspath(output_file)}')
 	json.dump(output, open(output_file, 'w'), indent=4)
 
