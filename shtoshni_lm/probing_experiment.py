@@ -107,7 +107,9 @@ def probing_exp(model_path: str, base_dir: str):
 					                               state_targets_type='state.NL')):
 
 		state_target_str = raw_state_targets['full_state'][0].split(", ")
-		output[j] = {'input': inputs['original_text'][0], 'output': []}
+		output[j] = {'input': inputs['original_text'][0],
+		             'init_state': inputs['init_state'][0],
+		             'output': []}
 		for seq_idx, all_seq in enumerate(all_seqs):
 			return_dict = model(input_ids=inputs['input_ids'].repeat(num_states, 1).to(device),
 			                    attention_mask=inputs['attention_mask'].repeat(num_states, 1).to(device),
