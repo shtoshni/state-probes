@@ -107,7 +107,7 @@ def probing_exp(model_path: str, base_dir: str):
 					                               state_targets_type='state.NL')):
 
 		state_target_str = raw_state_targets['full_state'][0].split(", ")
-		output[j] = {'input': inputs['original_text'], 'output': []}
+		output[j] = {'input': inputs['original_text'][0], 'output': []}
 		for seq_idx, all_seq in enumerate(all_seqs):
 			return_dict = model(input_ids=inputs['input_ids'].repeat(num_states, 1).to(device),
 			                    attention_mask=inputs['attention_mask'].repeat(num_states, 1).to(device),
@@ -127,8 +127,7 @@ def probing_exp(model_path: str, base_dir: str):
 				corr += 1
 			total += 1
 
-
-		if total >= 21:
+		if total >= 14:
 			break
 
 		logger.info(f"Total: {total}, Correct: {corr}")
@@ -136,7 +135,7 @@ def probing_exp(model_path: str, base_dir: str):
 	wandb.log({"dev/probing_acc": corr*100/total})
 	wandb.log({"dev/probing_corr": corr})
 
-	output_file = path.join(path.dirname(path.dirname(model_path)), "dev.jsonl")
+	output_file = path.join(path.dirname(path.dirname(model_path.rstrip("/"))), "dev.jsonl")
 	logging.info(f'Output_file: {path.abspath(output_file)}')
 	json.dump(output, open(output_file, 'w'), indent=4)
 

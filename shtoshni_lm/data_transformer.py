@@ -78,7 +78,6 @@ def convert_to_transformer_batches(
         # make inputs
         inps = []
         for i, inp in enumerate(inputs):
-            # string = ' '.join(inp).replace(' \n ', '.\n')
             string = ' '.join(inp).replace(' \n ', '. ')
             string = translate_states_to_nl(
                 init_states[i], domain, isinstance(tokenizer, BartTokenizerFast)) + '. ' + string
@@ -90,15 +89,9 @@ def convert_to_transformer_batches(
         # make lang targets
         lang_targets_new = []
         for tgt in lang_targets:
-            tgt = ' '.join(tgt)  # + '.'
-            # if isinstance(tokenizer, T5TokenizerFast) and '  ' in tgt:
-            #     tgt = tgt.replace('  ', ' first ')
+            tgt = ' '.join(tgt)  # + '.'$
             lang_targets_new.append(tgt + tokenizer.eos_token)
         lang_targets = lang_targets_new
-
-        # if control_input:
-        #     # the first beaker has 1 red, the second beaker has 1 red
-        #     inps = [", ".join([f"the {int_to_word[num]} beaker is empty" for num in range(7)]) + "." for _ in inps]
 
         inp_enc = tokenizer(inps, return_tensors='pt', padding=True, truncation=False, return_offsets_mapping=True).to(device)
         lang_tgt_enc = tokenizer(lang_targets, return_tensors='pt', padding=True, truncation=True,
