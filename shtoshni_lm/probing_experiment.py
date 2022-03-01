@@ -132,8 +132,8 @@ def probing_exp(model_path: str, base_dir: str):
 				corr += 1
 			total += 1
 
-		if total >= 14:
-			break
+		# if total >= 14:
+		# 	break
 
 		logger.info(f"Total: {total}, Correct: {corr}")
 
