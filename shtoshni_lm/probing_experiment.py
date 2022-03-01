@@ -2,6 +2,7 @@ import torch
 import argparse
 import json
 import itertools
+import os
 from os import path
 import logging
 from transformers import BartForConditionalGeneration, BartConfig, BartTokenizerFast
@@ -10,10 +11,19 @@ from data.alchemy.utils import int_to_word, colors
 from data_transformer import convert_to_transformer_batches
 from data.alchemy.parseScone import loadData
 from shtoshni_probing.config import PROBE_START, PROBE_END
+import wandb
 
 
 logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger()
+
+
+def get_model_name(model_path):
+	model_path = model_path.rstrip("/")
+	model_path = model_path.rstrip("/best/doc_encoder")
+	model_name = path.split(model_path)[1]
+
+	return model_name
 
 
 def initialize_model(model_path: str):
@@ -124,6 +134,9 @@ def probing_exp(model_path: str, base_dir: str):
 		# if j == 10:
 		# 	break
 
+	wandb.log({"dev/probing_acc": corr*100/total})
+	wandb.log({"dev/probing_corr": corr})
+
 	output_file = path.join(model_path, "dev.jsonl")
 	logging.info(f'Output_file: {path.abspath(output_file)}')
 	json.dump(output, open(output_file, 'w'), indent=4)
@@ -137,6 +150,12 @@ def main():
 	args = parser.parse_args()
 
 	assert (path.exists(args.model_path))
+
+	model_name = get_model_name(args.model_path)
+	wandb.init(
+		id=model_name, project="state-probing", resume=True,
+		notes="State probing", tags="november", config={},
+	)
 	probing_exp(args.model_path, args.base_dir)
 
 
