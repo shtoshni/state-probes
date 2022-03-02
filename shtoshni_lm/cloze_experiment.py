@@ -96,7 +96,7 @@ def probing_exp(model_path: str, base_dir: str):
 	cloze_seq_ids = tokenizer.batch_encode_plus(
 		cloze_steps, padding=True, add_special_tokens=False, return_tensors='pt')['input_ids'].to(device)
 
-	num_states = cloze_seq_ids[0].shape[0]
+	num_states = cloze_seq_ids.shape[0]
 	print(num_states)
 
 	loss_fct = torch.nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id, reduction="none")
