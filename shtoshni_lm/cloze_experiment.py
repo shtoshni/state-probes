@@ -132,7 +132,7 @@ def probing_exp(model_path: str, base_dir: str):
 	mrr /= len(dev_dataset)
 	print(f"{mrr: .3f}")
 	# wandb.log({"dev/probing_acc": corr*100/total})
-	wandb.log({"dev/cloze_mrr": mrr, "steps": 0})
+	wandb.log({"dev/cloze_mrr": mrr, "batch": 0})
 
 	output_file = path.join(path.dirname(path.dirname(model_path.rstrip("/"))), "cloze_mrr.txt")
 	with open(output_file, 'w') as f:
