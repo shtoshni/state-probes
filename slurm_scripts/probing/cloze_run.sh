@@ -30,7 +30,7 @@ echo "--------------------"
 
 echo "Starting experiment."
 
-python ${base_dir%/}/probing_experiment.py ${args} ~/research/state-probes/
+python ${base_dir%/}/cloze_probing.py ${args} ~/research/state-probes/
 
 conda deactivate
 a
