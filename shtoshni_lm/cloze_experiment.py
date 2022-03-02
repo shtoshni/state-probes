@@ -136,7 +136,7 @@ def probing_exp(model_path: str, base_dir: str):
 
 	output_file = path.join(path.dirname(path.dirname(model_path.rstrip("/"))), "cloze_mrr.txt")
 	with open(output_file, 'w') as f:
-		f.write(f"{mrr: .3f}")
+		f.write(f"{mrr:.3f}")
 
 
 	# output_file = path.join(path.dirname(path.dirname(model_path.rstrip("/"))), "dev.jsonl")
