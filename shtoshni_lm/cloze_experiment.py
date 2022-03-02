@@ -91,7 +91,7 @@ def probing_exp(model_path: str, base_dir: str):
 		model = model.cuda()
 
 	# Tokenize all next steps
-	cloze_steps = list(zip(*dev_dataset))[2]
+	cloze_steps = list(list(zip(*dev_dataset))[2])
 	print(cloze_steps)
 	cloze_seq_ids = tokenizer.batch_encode_plus(
 		cloze_steps, padding=True, add_special_tokens=False, return_tensors='pt')['input_ids'].to(device)
