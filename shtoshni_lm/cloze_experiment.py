@@ -62,8 +62,6 @@ def initialize_model(model_path: str):
 # 		for
 
 
-def get_all_next_steps(steps, tokenizer):
-
 
 def loadClozeData(data_file):
 	data = []
