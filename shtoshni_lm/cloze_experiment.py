@@ -106,6 +106,7 @@ def probing_exp(model_path: str, base_dir: str):
 
 	output = {}
 
+	mrr = 0
 	for idx, (init_state, prev_actions, next_action) in enumerate(dev_dataset):
 		input_string = init_state + '. ' + prev_actions
 		inputs = tokenizer(input_string, return_tensors='pt', padding=True, truncation=False, return_offsets_mapping=True).to(
@@ -121,11 +122,16 @@ def probing_exp(model_path: str, base_dir: str):
 		lang_loss = loss_fct(lm_logits.view(-1, len(tokenizer)), cloze_seq_ids.view(-1))
 		lang_loss = torch.sum(lang_loss.reshape_as(cloze_seq_ids), dim=1)
 
-		print(lang_loss.shape)
-		break
+		rank_idx = list(torch.sort(lang_loss)[1]).index(idx)
+		mrr += 1/(rank_idx + 1)
 
+		# print(lang_loss.shape)
+		# break
+
+	mrr /= len(dev_dataset)
+	print(mrr)
 	# wandb.log({"dev/probing_acc": corr*100/total})
-	# wandb.log({"dev/probing_corr": corr})
+	# wandb.log({"dev/probing_corr": corr, "steps": 0})
 
 	# output_file = path.join(path.dirname(path.dirname(model_path.rstrip("/"))), "dev.jsonl")
 	# logging.info(f'Output_file: {path.abspath(output_file)}')
