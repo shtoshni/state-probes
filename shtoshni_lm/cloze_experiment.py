@@ -92,6 +92,7 @@ def probing_exp(model_path: str, base_dir: str):
 
 	# Tokenize all next steps
 	cloze_steps = list(zip(*dev_dataset))[2]
+	print(cloze_steps)
 	cloze_seq_ids = tokenizer.batch_encode_plus(
 		cloze_steps, padding=True, add_special_tokens=False, return_tensors='pt')['input_ids'].to(device)
 
@@ -142,10 +143,10 @@ def main():
 	assert (path.exists(args.model_path))
 
 	model_name = get_model_name(args.model_path)
-	wandb.init(
-		id=model_name, project="state-probing", resume=True,
-		notes="State probing", tags="november", config={},
-	)
+	# wandb.init(
+	# 	id=model_name, project="state-probing", resume=True,
+	# 	notes="State probing", tags="november", config={},
+	# )
 	probing_exp(args.model_path, args.base_dir)
 
 
