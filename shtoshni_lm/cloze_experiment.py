@@ -118,7 +118,8 @@ def probing_exp(model_path: str, base_dir: str):
           		          labels=cloze_seq_ids, return_dict=True)
 
 		lm_logits = return_dict.logits
-		lm_logits = lm_logits * (1 - logit_mask) + logit_mask * (-1e10)
+		if 'state_' in model_name:
+			lm_logits = lm_logits * (1 - logit_mask) + logit_mask * (-1e10)
 
 		lang_loss = loss_fct(lm_logits.view(-1, len(tokenizer)), cloze_seq_ids.view(-1))
 		lang_loss = torch.sum(lang_loss.reshape_as(cloze_seq_ids), dim=1)
