@@ -97,7 +97,6 @@ def probing_exp(model_path: str, base_dir: str):
 		cloze_steps, padding=True, add_special_tokens=False, return_tensors='pt')['input_ids'].to(device)
 
 	num_states = cloze_seq_ids.shape[0]
-	print(num_states)
 
 	loss_fct = torch.nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id, reduction="none")
 
@@ -129,9 +128,9 @@ def probing_exp(model_path: str, base_dir: str):
 		# break
 
 	mrr /= len(dev_dataset)
-	print(mrr)
+	print(f"{mrr: .3f}")
 	# wandb.log({"dev/probing_acc": corr*100/total})
-	# wandb.log({"dev/probing_corr": corr, "steps": 0})
+	wandb.log({"dev/cloze_mrr": mrr, "steps": 0})
 
 	# output_file = path.join(path.dirname(path.dirname(model_path.rstrip("/"))), "dev.jsonl")
 	# logging.info(f'Output_file: {path.abspath(output_file)}')
@@ -148,10 +147,10 @@ def main():
 	assert (path.exists(args.model_path))
 
 	model_name = get_model_name(args.model_path)
-	# wandb.init(
-	# 	id=model_name, project="state-probing", resume=True,
-	# 	notes="State probing", tags="november", config={},
-	# )
+	wandb.init(
+		id=model_name, project="state-probing", resume=True,
+		notes="State probing", tags="november", config={},
+	)
 	probing_exp(args.model_path, args.base_dir)
 
 
