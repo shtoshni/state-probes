@@ -135,7 +135,7 @@ def probing_exp(model_path: str, base_dir: str):
 	wandb.log({"dev/cloze_mrr": mrr, "steps": 0})
 
 	output_file = path.join(path.dirname(path.dirname(model_path.rstrip("/"))), "cloze_mrr.txt")
-	with open(output_file) as f:
+	with open(output_file, 'w') as f:
 		f.write(f"{mrr: .3f}")
 
 
