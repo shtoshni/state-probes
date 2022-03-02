@@ -92,7 +92,7 @@ def probing_exp(model_path: str, base_dir: str):
 
 	# Tokenize all next steps
 	cloze_steps = list(list(zip(*dev_dataset))[2])
-	print(cloze_steps)
+	# print(cloze_steps)
 	cloze_seq_ids = tokenizer.batch_encode_plus(
 		cloze_steps, padding=True, add_special_tokens=False, return_tensors='pt')['input_ids'].to(device)
 
@@ -106,10 +106,9 @@ def probing_exp(model_path: str, base_dir: str):
 
 	output = {}
 
-
 	for idx, (init_state, prev_actions, next_action) in enumerate(dev_dataset):
 		input_string = init_state + '. ' + prev_actions
-		inputs = tokenizer(inps, return_tensors='pt', padding=True, truncation=False, return_offsets_mapping=True).to(
+		inputs = tokenizer(input_string, return_tensors='pt', padding=True, truncation=False, return_offsets_mapping=True).to(
 			device)
 
 		return_dict = model(input_ids=inputs['input_ids'].repeat(num_states, 1).to(device),
