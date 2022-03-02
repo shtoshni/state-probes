@@ -85,7 +85,7 @@ def probing_exp(model_path: str, base_dir: str):
 	if 'state_' in model_name:
 		probing_tokens_mask = [0.0] * (len(tokenizer) - 2) + [1.0, 1.0]
 		logit_mask = torch.tensor(
-			self.probing_tokens_mask, dtype=torch.float32, device=device)
+			probing_tokens_mask, dtype=torch.float32, device=device)
 
 	if torch.cuda.is_available():
 		model = model.cuda()
