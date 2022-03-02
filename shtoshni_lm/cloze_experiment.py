@@ -134,6 +134,11 @@ def probing_exp(model_path: str, base_dir: str):
 	# wandb.log({"dev/probing_acc": corr*100/total})
 	wandb.log({"dev/cloze_mrr": mrr, "steps": 0})
 
+	output_file = path.join(path.dirname(path.dirname(model_path.rstrip("/"))), "cloze_mrr.txt")
+	with open(output_file) as f:
+		f.write(f"{mrr: .3f}")
+
+
 	# output_file = path.join(path.dirname(path.dirname(model_path.rstrip("/"))), "dev.jsonl")
 	# logging.info(f'Output_file: {path.abspath(output_file)}')
 	# json.dump(output, open(output_file, 'w'), indent=4)
