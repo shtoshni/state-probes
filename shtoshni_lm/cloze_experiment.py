@@ -96,7 +96,7 @@ def probing_exp(model_path: str, base_dir: str):
 	# cloze_seq_ids = tokenizer.batch_encode_plus(
 	# 	cloze_steps, padding=True, add_special_tokens=False, return_tensors='pt')['input_ids'].to(device)
 	cloze_seq_ids = tokenizer.batch_encode_plus(
-		cloze_steps, padding=True, add_special_tokens=False, return_tensors='pt')['input_ids'].to(device)
+		cloze_steps, padding=True, add_special_tokens=True, return_tensors='pt')['input_ids'].to(device)
 
 	num_states = cloze_seq_ids.shape[0]
 

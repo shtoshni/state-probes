@@ -75,7 +75,7 @@ def get_all_states(tokenizer, device):
 		state_seqs = [(PROBE_START + prefix + state_suffix + PROBE_END) for state_suffix in state_suffixes]
 
 		state_seq_ids = tokenizer.batch_encode_plus(
-			state_seqs, padding=True, add_special_tokens=False, return_tensors='pt')['input_ids'].to(device)
+			state_seqs, padding=True, add_special_tokens=True, return_tensors='pt')['input_ids'].to(device)
 
 		all_seqs.append(state_seq_ids)
 
