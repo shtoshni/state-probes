@@ -140,10 +140,10 @@ def convert_to_transformer_batches(
                 max_len = state_tgt_enc['tgts'].size()[1]
                 tmp = torch.arange(max_len, device=state_tgt_enc['tgts'].device).expand(batch_size, max_len)
 
-                # Mask out input ids before the probing sequence except the sos token
+                # Mask out input ids before the probing sequence
                 state_tgt_enc['tgts'][tmp <= probe_end_token_idx] = -100
+                # Except the bos token
                 state_tgt_enc['tgts'][:, 0] = tokenizer.bos_token_id
-                # state_tgt_enc['tgts'][tmp <= probe_end_token_idx] = -100
 
                 # print(state_tgt_enc['input_ids'][0], state_tgt_enc['tgts'][0])
                 # print(probe_end_token_idx)
