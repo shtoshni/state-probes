@@ -142,7 +142,7 @@ def convert_to_transformer_batches(
 
                 # Mask out input ids before the probing sequence except the sos token
                 state_tgt_enc['tgts'][tmp <= probe_end_token_idx] = -100
-                state_tgt_enc['tgts'][0] = tokenizer.bos_token_id
+                state_tgt_enc['tgts'][:, 0] = tokenizer.bos_token_id
                 # state_tgt_enc['tgts'][tmp <= probe_end_token_idx] = -100
 
                 print(state_tgt_enc['input_ids'][0], probe_end_token_idx[0])
