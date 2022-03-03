@@ -91,12 +91,12 @@ def convert_to_transformer_batches(
         lang_targets_new = []
         for tgt in lang_targets:
             tgt = ' '.join(tgt)  # + '.'
-            lang_targets_new.append(tgt + tokenizer.eos_token)
+            lang_targets_new.append(tgt)  # + tokenizer.eos_token)
         lang_targets = lang_targets_new
 
         inp_enc = tokenizer(inps, return_tensors='pt', padding=True, truncation=False, return_offsets_mapping=True).to(device)
         lang_tgt_enc = tokenizer(lang_targets, return_tensors='pt', padding=True, truncation=True,
-                                 add_special_tokens=False).to(device)
+                                 add_special_tokens=True).to(device)
         inp_enc['original_text'] = inps
         lang_tgt_enc['original_text'] = lang_targets
         lang_tgt_enc['input_ids'].masked_fill_(lang_tgt_enc['input_ids'] == tokenizer.pad_token_id, -100)
@@ -126,7 +126,8 @@ def convert_to_transformer_batches(
                     PROBE_START + state_slice + PROBE_END + lang_target)
 
             state_tgt_enc = tokenizer(
-                target_list, return_tensors='pt', padding=True, truncation=False, add_special_tokens=False).to(device)
+                target_list, return_tensors='pt', padding=True, truncation=False,
+                add_special_tokens=True).to(device)
             state_tgt_enc['input_ids'].masked_fill_(state_tgt_enc['input_ids'] == tokenizer.pad_token_id, -100)
             state_tgt_enc['input_ids'].to(device)
 
