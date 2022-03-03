@@ -15,24 +15,24 @@ base_dir = "/share/data/speech/shtoshni/research/state-probes"
 
 
 model_names = [
-    'oracle_size_base_epochs_100_patience_10_state_1.0_all_text_seed_60',
-    'oracle_size_base_epochs_100_patience_10_state_1.0_random_text_seed_60',
-    'oracle_size_base_epochs_100_patience_10_state_1.0_targeted_text_seed_60',
+    # 'oracle_size_base_epochs_100_patience_10_state_1.0_all_text_seed_70',
+    # 'oracle_size_base_epochs_100_patience_10_state_1.0_random_text_seed_70',
+    # 'oracle_size_base_epochs_100_patience_10_state_1.0_targeted_text_seed_70',
 
-    'size_base_epochs_100_patience_10_state_0.1_targeted_text_seed_60',
-    'size_base_epochs_100_patience_10_state_0.25_targeted_text_seed_60',
-    'size_base_epochs_100_patience_10_state_0.5_targeted_text_seed_60',
-    'size_base_epochs_100_patience_10_state_0.75_targeted_text_seed_60',
+    'size_base_epochs_100_patience_10_state_0.1_targeted_text_seed_70',
+    'size_base_epochs_100_patience_10_state_0.25_targeted_text_seed_70',
+    'size_base_epochs_100_patience_10_state_0.5_targeted_text_seed_70',
+    'size_base_epochs_100_patience_10_state_0.75_targeted_text_seed_70',
 
-    'size_base_epochs_100_patience_10_state_0.1_all_text_seed_60',
-    'size_base_epochs_100_patience_10_state_0.25_all_text_seed_60',
-    'size_base_epochs_100_patience_10_state_0.5_all_text_seed_60',
-    'size_base_epochs_100_patience_10_state_0.75_all_text_seed_60',
+    'size_base_epochs_100_patience_10_state_0.1_all_text_seed_70',
+    'size_base_epochs_100_patience_10_state_0.25_all_text_seed_70',
+    'size_base_epochs_100_patience_10_state_0.5_all_text_seed_70',
+    'size_base_epochs_100_patience_10_state_0.75_all_text_seed_70',
 
-    'size_base_epochs_100_patience_10_state_0.1_random_text_seed_60',
-    'size_base_epochs_100_patience_10_state_0.25_random_text_seed_60',
-    'size_base_epochs_100_patience_10_state_0.5_random_text_seed_60',
-    'size_base_epochs_100_patience_10_state_0.75_random_text_seed_60',
+    'size_base_epochs_100_patience_10_state_0.1_random_text_seed_70',
+    'size_base_epochs_100_patience_10_state_0.25_random_text_seed_70',
+    'size_base_epochs_100_patience_10_state_0.5_random_text_seed_70',
+    'size_base_epochs_100_patience_10_state_0.75_random_text_seed_70',
 ]
 
 
