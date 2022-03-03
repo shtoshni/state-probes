@@ -142,7 +142,9 @@ def convert_to_transformer_batches(
 
                 # Mask out input ids before the probing sequence
                 # print(tmp <= probe_end_token_idx)
-                state_tgt_enc['tgts'][tmp <= probe_end_token_idx] = -100
+                state_tgt_enc['tgts'][0 < tmp <= probe_end_token_idx] = -100
+                # state_tgt_enc['tgts'][tmp <= probe_end_token_idx] = -100
+
                 # print(state_tgt_enc['input_ids'][0], probe_end_token_idx[0])
                 # print(probe_end_token_idx)
 

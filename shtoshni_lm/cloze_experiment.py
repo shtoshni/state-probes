@@ -33,37 +33,7 @@ def initialize_model(model_path: str):
 	return model, tokenizer
 
 
-# def get_all_states(tokenizer, device):
-# 	# state_suffixes = get_all_beaker_state_suffixes()
-# 	all_seqs = []
-# 	for idx in range(len(int_to_word)):
-# 		beaker_str = int_to_word[idx]
-# 		prefix = f"the {beaker_str} beaker "
-# 		state_seqs = [(PROBE_START + prefix + state_suffix + PROBE_END) for state_suffix in state_suffixes]
-#
-# 		state_seq_ids = tokenizer.batch_encode_plus(
-# 			state_seqs, padding=True, add_special_tokens=False, return_tensors='pt')['input_ids'].to(device)
-#
-# 		all_seqs.append(state_seq_ids)
-#
-# 	return all_seqs
-
-
-# def convert_to_transformer_batches(
-#     dataset, tokenizer, batchsize, random=None,
-#     domain="alchemy",
-#     state_targets_type="state.NL", device='cuda', num_instances=20,
-# ):
-# 	state_targets_type_split = state_targets_type.split('.')
-# 	batches = list(getBatchesWithInit(dataset, batchsize, get_subsequent_state=True))
-#
-# 	for batch in batches:
-# 		inputs, lang_targets, prev_state_targets, subsequent_state_targets, init_states = zip(*batch)
-# 		for
-
-
-
-def loadClozeData(data_file):
+def load_cloze_data(data_file):
 	data = []
 	with open(data_file) as f:
 		for line in f:
@@ -80,7 +50,7 @@ def probing_exp(model_path: str, base_dir: str):
 	if torch.cuda.is_available():
 		device = torch.device('cuda')
 
-	dev_dataset = loadClozeData(path.join(base_dir, "cloze_data/alchemy.txt"))
+	dev_dataset = load_cloze_data(path.join(base_dir, "cloze_data/alchemy.txt"))
 	model, tokenizer = initialize_model(model_path)
 	if 'state_' in model_name:
 		probing_tokens_mask = [0.0] * (len(tokenizer) - 2) + [1.0, 1.0]
