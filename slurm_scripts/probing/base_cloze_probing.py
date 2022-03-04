@@ -15,22 +15,31 @@ base_dir = "/share/data/speech/shtoshni/research/state-probes"
 
 
 model_names = [
-    'size_base_epochs_100_patience_10_seed_70',
+    'size_base_epochs_100_patience_10_seed_100',
 
-    'size_base_epochs_100_patience_10_state_0.1_targeted_text_seed_70',
-    'size_base_epochs_100_patience_10_state_0.25_targeted_text_seed_70',
-    'size_base_epochs_100_patience_10_state_0.5_targeted_text_seed_70',
-    'size_base_epochs_100_patience_10_state_0.75_targeted_text_seed_70',
+    "size_base_epochs_100_patience_10_state_0.5_all_text_seed_100",
+    "size_base_epochs_100_patience_10_state_0.5_random_text_seed_100",
+    "size_base_epochs_100_patience_10_state_0.5_targeted_text_seed_100",
 
-    'size_base_epochs_100_patience_10_state_0.1_all_text_seed_70',
-    'size_base_epochs_100_patience_10_state_0.25_all_text_seed_70',
-    'size_base_epochs_100_patience_10_state_0.5_all_text_seed_70',
-    'size_base_epochs_100_patience_10_state_0.75_all_text_seed_70',
+    "size_base_epochs_100_patience_10_state_0.6_all_text_seed_100",
+    "size_base_epochs_100_patience_10_state_0.6_random_text_seed_100",
+    "size_base_epochs_100_patience_10_state_0.6_targeted_text_seed_100",
 
-    'size_base_epochs_100_patience_10_state_0.1_random_text_seed_70',
-    'size_base_epochs_100_patience_10_state_0.25_random_text_seed_70',
-    'size_base_epochs_100_patience_10_state_0.5_random_text_seed_70',
-    'size_base_epochs_100_patience_10_state_0.75_random_text_seed_70',
+    "size_base_epochs_100_patience_10_state_0.7_all_text_seed_100",
+    "size_base_epochs_100_patience_10_state_0.7_random_text_seed_100",
+    "size_base_epochs_100_patience_10_state_0.7_targeted_text_seed_100",
+
+    "size_base_epochs_100_patience_10_state_0.8_all_text_seed_100",
+    "size_base_epochs_100_patience_10_state_0.8_random_text_seed_100",
+    "size_base_epochs_100_patience_10_state_0.8_targeted_text_seed_100",
+
+    "size_base_epochs_100_patience_10_state_0.9_all_text_seed_100",
+    "size_base_epochs_100_patience_10_state_0.9_random_text_seed_100",
+    "size_base_epochs_100_patience_10_state_0.9_targeted_text_seed_100",
+
+    "size_base_epochs_100_patience_10_state_1.0_all_text_seed_100",
+    "size_base_epochs_100_patience_10_state_1.0_random_text_seed_100",
+    "size_base_epochs_100_patience_10_state_1.0_targeted_text_seed_100",
 ]
 
 
@@ -42,7 +51,6 @@ common_options = [
 
 with open(out_file, 'w') as out_f:
     for option_comb in product(*common_options):
-        # print(option_comb)
         base = '{}/slurm_scripts/probing/cloze_run.sh '.format(base_dir)
         cur_command = base
         for value in option_comb:
