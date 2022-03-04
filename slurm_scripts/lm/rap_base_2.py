@@ -15,7 +15,7 @@ base_dir = "/share/data/speech/shtoshni/research/state-probes"
 
 fixed = ['--epochs 100 --patience 10 --use_wandb --model_size base --seed 100',]
 state = ['--add_state ' + state_type for state_type in ['all', 'targeted', 'random']]
-rap_prob = [f'--rap_prob {rap_prob}' for rap_prob in [0.5, 0.6, 0.7, 0.8, 0.9, 1.0]]
+rap_prob = [f'--rap_prob {rap_prob}' for rap_prob in [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]]
 common_options = [fixed, state, rap_prob]
 
 
