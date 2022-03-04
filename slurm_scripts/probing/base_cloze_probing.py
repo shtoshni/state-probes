@@ -17,6 +17,22 @@ base_dir = "/share/data/speech/shtoshni/research/state-probes"
 model_names = [
     'size_base_epochs_100_patience_10_seed_100',
 
+    "size_base_epochs_100_patience_10_state_0.1_all_text_seed_100",
+    "size_base_epochs_100_patience_10_state_0.1_random_text_seed_100",
+    "size_base_epochs_100_patience_10_state_0.1_targeted_text_seed_100",
+
+    "size_base_epochs_100_patience_10_state_0.2_all_text_seed_100",
+    "size_base_epochs_100_patience_10_state_0.2_random_text_seed_100",
+    "size_base_epochs_100_patience_10_state_0.2_targeted_text_seed_100",
+
+    "size_base_epochs_100_patience_10_state_0.3_all_text_seed_100",
+    "size_base_epochs_100_patience_10_state_0.3_random_text_seed_100",
+    "size_base_epochs_100_patience_10_state_0.3_targeted_text_seed_100",
+
+    "size_base_epochs_100_patience_10_state_0.4_all_text_seed_100",
+    "size_base_epochs_100_patience_10_state_0.4_random_text_seed_100",
+    "size_base_epochs_100_patience_10_state_0.4_targeted_text_seed_100",
+
     "size_base_epochs_100_patience_10_state_0.5_all_text_seed_100",
     "size_base_epochs_100_patience_10_state_0.5_random_text_seed_100",
     "size_base_epochs_100_patience_10_state_0.5_targeted_text_seed_100",
