@@ -56,7 +56,7 @@ model_names = [
     "size_base_epochs_100_patience_10_state_1.0_targeted_text_seed_100",
 ]
 
-model_names = ['multitasking_' + model_name for model_name in model_names]
+model_names = ['multitask_' + model_name for model_name in model_names]
 
 base_model_path = '/share/data/speech/shtoshni/research/state-probes/models/'
 common_options = [
