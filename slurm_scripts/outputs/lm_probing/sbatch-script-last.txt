@@ -1,3 +1,0 @@
-#!/bin/bash
-#SBATCH --partition=speech-gpu --cpus-per-task=1 --array=1-7 --job-name=lm_probing -o lm_probing-%A_%a.out
-bash -c "`sed "${SLURM_ARRAY_TASK_ID}q;d" batch-commands-last.txt`"
