@@ -115,7 +115,7 @@ def probing_exp(model_path: str, base_dir: str):
 	output_file = path.join(path.dirname(path.dirname(model_path.rstrip("/"))), "cloze_state.txt")
 	logging.info(f'Output_file: {path.abspath(output_file)}')
 
-	with open(output_file) as f:
+	with open(output_file, "w") as f:
 		for idx, (init_state, prev_actions, cur_state, next_action) in enumerate(dev_dataset):
 			input_string = init_state + '. ' + prev_actions
 			inputs = tokenizer(input_string, return_tensors='pt', padding=True, truncation=False,
