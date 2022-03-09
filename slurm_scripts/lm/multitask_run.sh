@@ -2,7 +2,7 @@
 
 env | grep CUDA
 venv=state-probes
-base_dir=/share/data/speech/shtoshni/research/state-probes/shtoshni_lm
+base_dir=/share/data/speech/shtoshni/research/state-probes/shtoshni_lm_multitask
 args="$@"
 
 echo $args
@@ -30,6 +30,6 @@ echo "--------------------"
 
 echo "Starting experiment."
 
-python ${base_dir%/}/cloze_experiment.py ${args} ~/research/state-probes/
+python ${base_dir%/}/main.py ${args} --base_model_dir ~/research/state-probes/models/ --base_dir ~/research/state-probes/
 
 conda deactivate
