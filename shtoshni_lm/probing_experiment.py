@@ -146,8 +146,6 @@ def probing_exp(model_path: str, base_dir: str):
 	wandb.log({"dev/cloze_probing_acc": corr*100/total})
 	wandb.log({"dev/cloze_probing_corr": corr})
 
-	json.dump(output, open(output_file, 'w'), indent=4)
-
 
 def main():
 	parser = argparse.ArgumentParser()
