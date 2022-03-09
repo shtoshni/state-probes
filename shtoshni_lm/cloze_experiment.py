@@ -62,9 +62,6 @@ def probing_exp(model_path: str, base_dir: str):
 
 	# Tokenize all next steps
 	cloze_steps = list(list(zip(*dev_dataset))[3])
-	# print(cloze_steps)
-	# cloze_seq_ids = tokenizer.batch_encode_plus(
-	# 	cloze_steps, padding=True, add_special_tokens=False, return_tensors='pt')['input_ids'].to(device)
 	cloze_seq_ids = tokenizer.batch_encode_plus(
 		cloze_steps, padding=True, add_special_tokens=True, return_tensors='pt')['input_ids'].to(device)
 
@@ -72,33 +69,31 @@ def probing_exp(model_path: str, base_dir: str):
 
 	loss_fct = torch.nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id, reduction="none")
 
-	total = 0
-	corr = 0
-
-	output = {}
-
 	mrr = 0
-	for idx, (init_state, prev_actions, cur_state, next_action) in enumerate(dev_dataset):
-		input_string = init_state + '. ' + prev_actions
-		inputs = tokenizer(input_string, return_tensors='pt', padding=True, truncation=False, return_offsets_mapping=True).to(
-			device)
+	output_file = path.join(path.dirname(path.dirname(model_path.rstrip("/"))), "cloze_mrr_fine.txt")
+	logging.info(f'Output_file: {path.abspath(output_file)}')
 
-		return_dict = model(input_ids=inputs['input_ids'].repeat(num_states, 1).to(device),
-		                    attention_mask=inputs['attention_mask'].repeat(num_states, 1).to(device),
-          		          labels=cloze_seq_ids, return_dict=True)
+	with open(output_file, "w") as f:
+		for idx, (init_state, prev_actions, cur_state, next_action) in enumerate(dev_dataset):
+			input_string = init_state + '. ' + prev_actions
+			inputs = tokenizer(input_string, return_tensors='pt', padding=True, truncation=False, return_offsets_mapping=True).to(
+				device)
 
-		lm_logits = return_dict.logits
-		if 'state_' in model_name:
-			lm_logits = lm_logits * (1 - logit_mask) + logit_mask * (-1e10)
+			return_dict = model(input_ids=inputs['input_ids'].repeat(num_states, 1).to(device),
+			                    attention_mask=inputs['attention_mask'].repeat(num_states, 1).to(device),
+	                        labels=cloze_seq_ids, return_dict=True)
 
-		lang_loss = loss_fct(lm_logits.view(-1, len(tokenizer)), cloze_seq_ids.view(-1))
-		lang_loss = torch.sum(lang_loss.reshape_as(cloze_seq_ids), dim=1)
+			lm_logits = return_dict.logits
+			if 'state_' in model_name:
+				lm_logits = lm_logits * (1 - logit_mask) + logit_mask * (-1e10)
 
-		rank_idx = list(torch.sort(lang_loss)[1]).index(idx)
-		mrr += 1/(rank_idx + 1)
+			lang_loss = loss_fct(lm_logits.view(-1, len(tokenizer)), cloze_seq_ids.view(-1))
+			lang_loss = torch.sum(lang_loss.reshape_as(cloze_seq_ids), dim=1)
 
-		# print(lang_loss.shape)
-		# break
+			rank_idx = list(torch.sort(lang_loss)[1]).index(idx)
+			cur_mrr = 1/(rank_idx + 1)
+			f.write(str(cur_mrr) + "\n")
+			mrr += cur_mrr
 
 	mrr /= len(dev_dataset)
 	print(f"{mrr: .3f}")
@@ -108,11 +103,6 @@ def probing_exp(model_path: str, base_dir: str):
 	output_file = path.join(path.dirname(path.dirname(model_path.rstrip("/"))), "cloze_mrr.txt")
 	with open(output_file, 'w') as f:
 		f.write(f"{mrr:.3f}")
-
-
-	# output_file = path.join(path.dirname(path.dirname(model_path.rstrip("/"))), "dev.jsonl")
-	# logging.info(f'Output_file: {path.abspath(output_file)}')
-	# json.dump(output, open(output_file, 'w'), indent=4)
 
 
 def main():

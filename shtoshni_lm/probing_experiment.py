@@ -110,8 +110,6 @@ def probing_exp(model_path: str, base_dir: str):
 	total = 0
 	corr = 0
 
-	output = {}
-
 	output_file = path.join(path.dirname(path.dirname(model_path.rstrip("/"))), "cloze_state.txt")
 	logging.info(f'Output_file: {path.abspath(output_file)}')
 
