@@ -136,9 +136,6 @@ def probing_exp(model_path: str, base_dir: str):
 				pred_state = tokenizer.decode(all_seq[argmin], skip_special_tokens=True).strip()
 				gt_state = state_target_str[seq_idx].strip()
 
-				output[j]['output'].append(
-					{'pred': pred_state, 'gt': gt_state, 'corr': pred_state == gt_state,
-					 'same_as_init': output[j]['init_state'][seq_idx] == gt_state})
 				logger.info(f"{pred_state}, {gt_state}")
 				if pred_state == gt_state:
 					corr += 1
