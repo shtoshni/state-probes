@@ -142,7 +142,7 @@ def probing_exp(model_path: str, base_dir: str):
 					instance_corr += 1
 				total += 1
 
-			f.write(instance_corr + "\n")
+			f.write(str(instance_corr) + "\n")
 			logger.info(f"Total: {total}, Correct: {corr}")
 
 	wandb.log({"dev/cloze_probing_acc": corr*100/total})
