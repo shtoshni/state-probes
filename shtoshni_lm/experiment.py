@@ -172,6 +172,7 @@ class Experiment(object):
 					convert_to_transformer_batches(
 						self.dataset, self.tokenizer, self.args.batchsize, random=random,
 						domain="alchemy", device=self.device, add_state=self.args.add_state,
+						randomize_state=args.randomize_state
 					)
 			):
 
