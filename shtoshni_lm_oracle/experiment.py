@@ -229,7 +229,7 @@ class Experiment(object):
 			dev_loss = self.periodic_model_eval()
 			if self.args.use_wandb:
 				wandb.log({"dev/loss": dev_loss, 'batch': self.train_info['global_steps']})
-				wandb.log({"dev/best_loss": self.train_info['best_val_loss'], 'batch': self.train_info['global_steps']})
+				wandb.log({"dev/best_loss": self.train_info['best_val_loss']})
 
 			# Get elapsed time
 			elapsed_time = time.time() - start_time

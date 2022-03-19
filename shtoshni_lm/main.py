@@ -24,10 +24,19 @@ def main():
     parser.add_argument('--rap_prob', default=0.0, type=float)
     parser.add_argument('--add_state', choices=['all', 'targeted', 'random'], type=str, default='targeted')
     parser.add_argument('--state_repr', default="text", choices=["text", "raw"], type=str)
+    parser.add_argument('--randomize_state', default=False, action="store_true",
+                        help="Randomize states in a batch to setup a control task where model is "
+                             "fed random state rather than actual state"
+                        )
 
     args = parser.parse_args()
 
-    model_dir_str = "size_" + str(args.model_size)
+    if args.randomize_state:
+        model_dir_str = "random_"
+    else:
+        model_dir_str = ""
+
+    model_dir_str += "size_" + str(args.model_size)
     model_dir_str += "_epochs_" + str(args.epochs)
     model_dir_str += "_patience_" + str(args.patience)
 
@@ -41,6 +50,8 @@ def main():
         model_dir_str += f"_num_train_{args.num_train}"
 
     model_dir_str += f"_seed_{args.seed}"
+
+
 
     args.model_dir = path.join(args.base_model_dir, model_dir_str)
     args.best_model_dir = path.join(args.model_dir, "best")

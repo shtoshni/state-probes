@@ -17,6 +17,7 @@ from data_transformer import convert_to_transformer_batches
 from transformers import get_linear_schedule_with_warmup
 from shtoshni_probing.config import PROBE_START, PROBE_END
 
+
 logging.basicConfig(format='%(asctime)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger()
 
@@ -197,11 +198,6 @@ class Experiment(object):
 						labels=target, return_dict=True,
 					)
 
-					# lm_logits = return_dict.logits
-					# lm_logits = lm_logits.view(-1, len(self.tokenizer))
-					# loss = self.loss_fct(lm_logits, target.view(-1))
-					# num_tokens = torch.sum((target != -100).to(torch.float)).item()
-					# loss = loss/num_tokens
 					loss = return_dict.loss
 
 					optimizer.zero_grad()
@@ -210,7 +206,6 @@ class Experiment(object):
 					optim_scheduler.step()
 
 					loss_val = loss.item()
-					# logger.info(f"{loss_val} {return_dict.loss.item()}")
 					lang_train_losses.append(loss_val)
 					self.train_info['global_steps'] += 1
 
@@ -229,7 +224,7 @@ class Experiment(object):
 			dev_loss = self.periodic_model_eval()
 			if self.args.use_wandb:
 				wandb.log({"dev/loss": dev_loss, 'batch': self.train_info['global_steps']})
-				wandb.log({"dev/best_loss": self.train_info['best_val_loss'], 'batch': self.train_info['global_steps']})
+				wandb.log({"dev/best_loss": self.train_info['best_val_loss']})
 
 			# Get elapsed time
 			elapsed_time = time.time() - start_time
