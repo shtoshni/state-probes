@@ -2,8 +2,13 @@
 
 from data.alchemy.alchemy_artificial_generator import execute
 from data.alchemy.utils import (
-    check_well_formedness, word_to_int, colors, d_colors, int_to_word,
+    check_well_formedness,
+    word_to_int,
+    colors,
+    d_colors,
+    int_to_word,
 )
+
 
 def find_nth_color(nth, color, objs):
     count = 0
@@ -12,10 +17,11 @@ def find_nth_color(nth, color, objs):
             # empty beaker (ignore in count)
             continue
         if color in obj:
-            if nth == count: 
+            if nth == count:
                 return pos
             count += 1
     assert False, repr(color) + str(nth)
+
 
 def countColor(color, objs):
     count = 0
@@ -27,105 +33,116 @@ def countColor(color, objs):
             count += 1
     return count
 
+
 def decode_pos(lst, objs):
     if len(lst) == 1:
         return word_to_int[lst[0]]
     elif all(c not in lst for c in colors):
         return word_to_int[" ".join(lst)]
 
-    elif len(lst) >= 2: #TODO "second to last"
+    elif len(lst) >= 2:  # TODO "second to last"
 
         if len(lst) == 2:
-            nth_word, color = lst 
+            nth_word, color = lst
         else:
             color = lst[-1]
             nth_word = " ".join(lst[:-1])
-        word_to_nth = {"first": 0,
-                "second":1,
-                "third":2,
-                "fourth":3,
-                "fifth":4,
-                "second to last": countColor(color, objs) - 2,
-                "last": countColor(color, objs) - 1,
-                "": 0}
-        #print(repr(nth_word))
+        word_to_nth = {
+            "first": 0,
+            "second": 1,
+            "third": 2,
+            "fourth": 3,
+            "fifth": 4,
+            "second to last": countColor(color, objs) - 2,
+            "last": countColor(color, objs) - 1,
+            "": 0,
+        }
+        # print(repr(nth_word))
         nth = word_to_nth[nth_word]
         return find_nth_color(nth, color, objs)
 
 
 def parse_utt_with_world(string, world):
-    objs = world['objects']
+    objs = world["objects"]
 
     lst = string.split(" ")
     action = lst[0]
-    if action == 'drain':
+    if action == "drain":
         neg_amt = int(lst[1])
         pos = decode_pos(lst[4:-1], objs)
 
-        if objs[pos] is None: cur_amt = 0
-        else: cur_amt = len(objs[pos])
-        amt = cur_amt - neg_amt 
+        if objs[pos] is None:
+            cur_amt = 0
+        else:
+            cur_amt = len(objs[pos])
+        amt = cur_amt - neg_amt
         args = [pos, amt]
-    elif action == 'pour':
+    elif action == "pour":
 
-        toBeakerIdx = lst.index('beaker')
+        toBeakerIdx = lst.index("beaker")
         toP = decode_pos(lst[2:toBeakerIdx], objs)
-        fromP = decode_pos(lst[toBeakerIdx+3:-1], objs)
+        fromP = decode_pos(lst[toBeakerIdx + 3 : -1], objs)
         args = [toP, fromP]
-    elif action == 'mix':
+    elif action == "mix":
         arg = int(lst[-1])
         args = [arg]
 
-    else: assert False, f'action: {action}, string: {string}'
+    else:
+        assert False, f"action: {action}, string: {string}"
     return action, args
 
 
 def parse_world(string):
-    #"r r oooo r pppp pp yyy"
+    # "r r oooo r pppp pp yyy"
     objs = []
-    for beaker in string.split(' '):
-        if beaker == '_': objs.append(None)
-        else: objs.append([d_colors[c] for c in beaker])
-    world = {'objects': objs, 'last': []}
+    for beaker in string.split(" "):
+        if beaker == "_":
+            objs.append(None)
+        else:
+            objs.append([d_colors[c] for c in beaker])
+    world = {"objects": objs, "last": []}
     return world
 
 
 def consistencyCheck(prior, gen):
-    #parse prior:
-    idx = prior.index('.')
+    # parse prior:
+    idx = prior.index(".")
     init_state = prior[:idx]
-    prior_utts = prior[idx+2:]
+    prior_utts = prior[idx + 2 :]
     if len(prior_utts) > 0:
-        if '\n' in prior_utts:
-            prior_utts = prior_utts.split('.\n')
+        if "\n" in prior_utts:
+            prior_utts = prior_utts.split(".\n")
         else:
-            prior_utts = prior_utts.split('. ')
-    else: prior_utts = []
+            prior_utts = prior_utts.split(". ")
+    else:
+        prior_utts = []
     init_state = " ".join(i[2:] for i in init_state.split(" "))
     gen_utt = gen[:-1]
 
-    #run prior utterances
+    # run prior utterances
     world = parse_world(init_state)
     for u in prior_utts:
         action, args = parse_utt_with_world(u, world)
-        world = execute(world, action, args) #except args need to be modified i guess
+        world = execute(world, action, args)  # except args need to be modified i guess
 
-    #now do gen
+    # now do gen
     try:
         action, args = parse_utt_with_world(gen_utt, world)
     except (AssertionError, ValueError, KeyError) as e:
         return False
     try:
-        new_world = execute(world, action, args) #except args need to be modified i guess
+        new_world = execute(
+            world, action, args
+        )  # except args need to be modified i guess
     except (TypeError, AssertionError) as e:
         return False
 
-    if new_world['objects'] != world['objects']:
+    if new_world["objects"] != world["objects"]:
         return True
     return False
 
 
-if __name__=='__main__':
+if __name__ == "__main__":
 
     us = """142,drain 1 from the first red beaker. drain 1 from the third beaker. drain 1 from the third beaker. drain 2 from the last orange beaker. pour the third beaker to the last beaker. 
 143,drain 1 from the last beaker. drain 2 from the first beaker. drain 2 from the fourth beaker. pour the last orange beaker to the  yellow beaker. mix beaker 6. 
@@ -153,33 +170,32 @@ if __name__=='__main__':
     s0 = "ggg ggg rr pppp rrrr ggg ooo"
     s1 = "ggg ggg r pppp rrrr ggg ooo"
 
-
     for j in range(10):
-        Us = [x for x in  us.split('\n')[j][4:].split(". ") if x != '']
+        Us = [x for x in us.split("\n")[j][4:].split(". ") if x != ""]
         print(Us)
 
-        Ss = states.split('\n')[j][4:].split(',')
+        Ss = states.split("\n")[j][4:].split(",")
         print(Ss)
 
         for i in range(5):
 
-
             s0 = Ss[i]
-            s1 = Ss[i+1]
+            s1 = Ss[i + 1]
             u = Us[i]
 
             world = parse_world(s0)
             action, args = parse_utt_with_world(u, world)
-            new_world = execute(world, action, args) #except args need to be modified i guess 
+            new_world = execute(
+                world, action, args
+            )  # except args need to be modified i guess
 
-            assert new_world['objects'] == parse_world(s1)['objects']
+            assert new_world["objects"] == parse_world(s1)["objects"]
 
             print("worked", j, i)
 
-
     print()
     print()
-    prior ="""1:gggg 2:ggg 3:ggg 4:pppp 5:ppp 6:p 7:gggg. drain 1 from the fourth beaker.
+    prior = """1:gggg 2:ggg 3:ggg 4:pppp 5:ppp 6:p 7:gggg. drain 1 from the fourth beaker.
 drain 2 from the first beaker.
 drain 2 from the second to last green beaker.
 pour the last purple beaker to the second to last green beaker"""
@@ -191,4 +207,3 @@ pour the last purple beaker to the second to last green beaker"""
     print()
     print()
     print(consistencyCheck(prior, gen))
-

@@ -8,26 +8,40 @@ from experiment import Experiment
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--lr', type=float, default=1e-5)
-    parser.add_argument('--batchsize', type=int, default=24)
-    parser.add_argument('--encode_init_state', type=str, default='NL', choices=[False, 'raw', 'NL'])
-    parser.add_argument('--eval', default=False, action="store_true")
-    parser.add_argument('--seed', type=int, default=10)
-    parser.add_argument('--epochs', type=int, default=10)
-    parser.add_argument('--num_train', type=int, default=None)
-    parser.add_argument('--patience', type=int, default=2)
-    parser.add_argument('--base_model_dir', type=str, default='models')
-    parser.add_argument('--model_size', type=str, default='base', choices=['base', 'large'])
-    parser.add_argument('--base_dir', type=str, default=None)
-    parser.add_argument('--use_wandb', default=False, action="store_true")
+    parser.add_argument("--lr", type=float, default=1e-5)
+    parser.add_argument("--batchsize", type=int, default=24)
+    parser.add_argument(
+        "--encode_init_state", type=str, default="NL", choices=[False, "raw", "NL"]
+    )
+    parser.add_argument("--eval", default=False, action="store_true")
+    parser.add_argument("--seed", type=int, default=10)
+    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--num_train", type=int, default=None)
+    parser.add_argument("--num_dev", type=int, default=None)
+    parser.add_argument("--patience", type=int, default=2)
+    parser.add_argument("--base_model_dir", type=str, default="models")
+    parser.add_argument(
+        "--model_size", type=str, default="base", choices=["base", "large"]
+    )
+    parser.add_argument("--base_dir", type=str, default=None)
+    parser.add_argument("--use_wandb", default=False, action="store_true")
 
-    parser.add_argument('--rap_prob', default=0.0, type=float)
-    parser.add_argument('--add_state', choices=['all', 'targeted', 'random'], type=str, default='targeted')
-    parser.add_argument('--state_repr', default="text", choices=["text", "raw"], type=str)
-    parser.add_argument('--randomize_state', default=False, action="store_true",
-                        help="Randomize states in a batch to setup a control task where model is "
-                             "fed random state rather than actual state"
-                        )
+    parser.add_argument(
+        "--add_state",
+        choices=["all", "targeted", "random", None],
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--state_repr", default="text", choices=["text", "raw"], type=str
+    )
+    parser.add_argument(
+        "--randomize_state",
+        default=False,
+        action="store_true",
+        help="Randomize states in a batch to setup a control task where model is "
+        "fed random state rather than actual state",
+    )
 
     args = parser.parse_args()
 
@@ -40,9 +54,8 @@ def main():
     model_dir_str += "_epochs_" + str(args.epochs)
     model_dir_str += "_patience_" + str(args.patience)
 
-    if args.rap_prob:
+    if args.add_state:
         model_dir_str += "_state"
-        model_dir_str += f"_{args.rap_prob}"
         model_dir_str += f"_{args.add_state}"
         model_dir_str += f"_{args.state_repr}"
 
@@ -51,14 +64,12 @@ def main():
 
     model_dir_str += f"_seed_{args.seed}"
 
-
-
     args.model_dir = path.join(args.base_model_dir, model_dir_str)
     args.best_model_dir = path.join(args.model_dir, "best")
 
     # Set log dir
     wandb_dir = path.join(args.model_dir, "wandb")
-    os.environ['WANDB_DIR'] = wandb_dir
+    os.environ["WANDB_DIR"] = wandb_dir
 
     if not path.exists(args.model_dir):
         os.makedirs(args.model_dir)
@@ -73,14 +84,20 @@ def main():
     args.best_model_path = path.join(args.best_model_dir, "model.pt")
 
     if args.use_wandb:
-        wandb.init(
-            id=model_dir_str, project="state-probing", resume=True,
-            notes="State probing", tags="november", config={},
-        )
-        wandb.config.update(args)
-
+        try:
+            wandb.init(
+                id=model_dir_str,
+                project="state-probing",
+                resume=True,
+                notes="State probing",
+                tags="november",
+                config={},
+            )
+            wandb.config.update(args)
+        except:
+            args.use_wandb = False
     Experiment(args)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

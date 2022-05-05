@@ -14,3 +14,4 @@ models/
 .idea/workspace.xml
 .ipynb_checkpoints/
 *.out
+archive/
