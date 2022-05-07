@@ -112,7 +112,7 @@ def convert_to_transformer_batches(
             return_tensors="pt",
             padding=True,
             truncation=True,
-            add_special_tokens=True,
+            add_special_tokens=False,
         ).to(device)
         inp_enc["original_text"] = inps
         inp_enc["init_state"] = init_states_str
