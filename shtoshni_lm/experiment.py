@@ -468,10 +468,10 @@ class Experiment(object):
                 # Remove state tokens from loss
                 num_state_tokens = len(pred_state_indices)
                 lm_logits = lm_logits[num_state_tokens:]
-                print(label_ids)
-                print(lang_tgts["input_ids"])
-                print(lm_logits.shape)
-                print(lang_tgts["input_ids"].shape)
+                # print(label_ids)
+                # print(lang_tgts["input_ids"])
+                # print(lm_logits.shape)
+                # print(lang_tgts["input_ids"].shape)
 
 
             num_tokens = torch.sum(
