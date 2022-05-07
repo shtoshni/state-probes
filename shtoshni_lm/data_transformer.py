@@ -162,7 +162,7 @@ def convert_to_transformer_batches(
                     return_tensors="pt",
                     padding=True,
                     truncation=False,
-                    add_special_tokens=True,
+                    add_special_tokens=False,
                 ).to(device)
                 state_tgt_enc["state_str"] = state_slice_list
                 state_tgt_enc["input_ids"].masked_fill_(
