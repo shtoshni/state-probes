@@ -443,7 +443,7 @@ class Experiment(object):
                     return_tensors="pt",
                     padding=True,
                     truncation=False,
-                    add_special_tokens=True,
+                    add_special_tokens=False,
                 )["input_ids"].to(self.device)
             else:
                 label_ids = lang_tgts["input_ids"]
