@@ -19,6 +19,8 @@ from data_transformer import convert_to_transformer_batches
 from transformers import get_linear_schedule_with_warmup
 from shtoshni_lm.config import PROBE_START, PROBE_END
 from shtoshni_lm.data_transformer import represent_add_state_str
+from shtoshni_lm.probing_experiment import get_all_states
+
 
 logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
 logger = logging.getLogger()
@@ -39,7 +41,7 @@ class Experiment(object):
         self._load_data()
 
         if self.args.add_state:
-            self.all_seqs = self.get_all_states(self.tokenizer)
+            self.all_seqs = get_all_states(self.tokenizer, self.device)
             self.num_states = self.all_seqs[0].shape[0]
 
         # Step 3 - Load model and resume training if required
@@ -304,59 +306,6 @@ class Experiment(object):
             # Check stopping criteria
             if not self._is_training_remaining():
                 break
-
-    def get_all_beaker_state_suffixes(self):
-        all_beaker_states = set()
-        d_colors = {color[0]: color for color in colors}
-        for beaker_amount in range(5):
-            if beaker_amount == 0:
-                all_beaker_states.add("_")
-            else:
-                all_beaker_states = all_beaker_states.union(
-                    set(itertools.product(d_colors, repeat=beaker_amount))
-                )
-
-        outputs = set()
-        for beaker_state in all_beaker_states:
-            if "_" in beaker_state:
-                string = f"is empty"
-            else:
-                colors_to_amount = {}
-                for item in beaker_state:
-                    if d_colors[item] not in colors_to_amount:
-                        colors_to_amount[d_colors[item]] = 0
-                    colors_to_amount[d_colors[item]] += 1
-
-                string = []
-                for color in sorted(colors_to_amount.keys()):
-                    string.append(f"{colors_to_amount[color]} {color}")
-                if len(string) > 1:
-                    string = " and ".join(string)
-                else:
-                    string = string[0]
-                string = f"has {string}"
-
-            outputs.add(string)
-        return list(outputs)
-
-    def get_all_states(self, tokenizer):
-        state_suffixes = self.get_all_beaker_state_suffixes()
-        all_seqs = []
-        for idx in range(len(int_to_word)):
-            beaker_str = int_to_word[idx]
-            prefix = f"the {beaker_str} beaker "
-            state_seqs = [
-                (PROBE_START + prefix + state_suffix + PROBE_END)
-                for state_suffix in state_suffixes
-            ]
-
-            state_seq_ids = tokenizer.batch_encode_plus(
-                state_seqs, padding=True, add_special_tokens=True, return_tensors="pt"
-            )["input_ids"].to(self.device)
-
-            all_seqs.append(state_seq_ids)
-
-        return all_seqs
 
     def predict_state(self, model, input_ids, attention_mask, gt_state_str):
         pred_state_seq = []

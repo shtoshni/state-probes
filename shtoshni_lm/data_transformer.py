@@ -169,10 +169,6 @@ def convert_to_transformer_batches(
                     state_tgt_enc["input_ids"] == tokenizer.pad_token_id, -100
                 )
                 state_tgt_enc["input_ids"].to(device)
-
-                # print(state_tgt_enc['input_ids'])
-                # print(state_tgt_enc)
-                # print(tokenizer.batch_decode(state_tgt_enc['input_ids']))
                 state_tgt_enc["key"] = state_key
 
             inp_enc["state_key"] = state_key

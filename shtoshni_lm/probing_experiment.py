@@ -10,7 +10,7 @@ from transformers import BartForConditionalGeneration, BartConfig, BartTokenizer
 from data.alchemy.utils import int_to_word, colors
 from data_transformer import convert_to_transformer_batches
 from data.alchemy.parseScone import loadData
-from shtoshni_probing.config import PROBE_START, PROBE_END
+from shtoshni_lm.config import PROBE_START, PROBE_END
 import wandb
 
 
@@ -89,7 +89,7 @@ def get_all_states(tokenizer, device):
         ]
 
         state_seq_ids = tokenizer.batch_encode_plus(
-            state_seqs, padding=True, add_special_tokens=True, return_tensors="pt"
+            state_seqs, padding=True, add_special_tokens=False, return_tensors="pt"
         )["input_ids"].to(device)
 
         all_seqs.append(state_seq_ids)
