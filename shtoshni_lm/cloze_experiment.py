@@ -186,8 +186,6 @@ def main():
     cloze_file = path.join(args.base_dir, "cloze_data/alchemy.txt")
 
     cloze_exp = ClozeExperiment(model_path=args.model_path, data_file=cloze_file)
-    cloze_exp.perform_cloze_exp()
-
     model_name = get_model_name(args.model_path)
     wandb.init(
         id=model_name,
@@ -197,6 +195,9 @@ def main():
         tags="november",
         config={},
     )
+
+    cloze_exp.perform_cloze_exp()
+
 
 
 if __name__ == "__main__":
