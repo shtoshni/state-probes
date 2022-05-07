@@ -395,7 +395,7 @@ class Experiment(object):
         return pred_state_indices, pred_state_str, corr_state
 
     @torch.no_grad()
-    def get_dataset_loss(self, model, dataset):
+    def get_dataset_loss(self, model, dataset) -> float:
         total_tokens = 0
         n_val = 0
         tot_val_loss = 0
@@ -479,14 +479,15 @@ class Experiment(object):
             n_val += len(inputs["input_ids"])
             total_tokens += num_tokens
 
-            logger.info(f"Total instances: {n_val}, Num tokens: {total_tokens}")
-            avg_val_loss = tot_val_loss / total_tokens
-
+        logger.info(f"Total instances: {n_val}, Num tokens: {total_tokens}")
         if self.args.add_state:
             # State tracking accuracy
             state_tracking_acc = (100.0 * total_state_corr) / total_state_pred
-            print(f"State tracking accuracy: {state_tracking_acc:.2f}")
+            logger.info(f"State tracking accuracy: {state_tracking_acc:.2f}")
+            if self.args.use_wandb:
+                wandb.log({"State Tracking Acc": state_tracking_acc})
 
+        avg_val_loss = tot_val_loss / total_tokens
         return avg_val_loss
 
     @torch.no_grad()
