@@ -197,7 +197,6 @@ def main():
         tags="november",
         config={},
     )
-    probing_exp(args.model_path, args.base_dir)
 
 
 if __name__ == "__main__":
