@@ -105,6 +105,7 @@ def convert_to_transformer_batches(
             return_tensors="pt",
             padding=True,
             truncation=False,
+            add_special_tokens=True,
             return_offsets_mapping=True,
         ).to(device)
         lang_tgt_enc = tokenizer(
