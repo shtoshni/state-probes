@@ -35,13 +35,15 @@ def load_cloze_data(data_file):
 
 
 class ClozeExperiment:
-    def __init__(self, model_path, data_file):
+    def __init__(self, model_path, data_file, num_prev_steps=0):
         self.model_path = model_path
         self.model, self.tokenizer = self.initialize_model()
         if torch.cuda.is_available():
             self.model = self.model.cuda()
 
         self.dev_dataset = load_cloze_data(data_file)
+        self.num_prev_steps = num_prev_steps
+
         self.model_name = get_model_name(model_path)
         self.all_seqs = get_all_states(self.tokenizer, self.model.device)
         self.num_states = self.all_seqs[0].shape[0]
@@ -118,8 +120,10 @@ class ClozeExperiment:
         mrr = 0
         corr_state = 0
         total_instances = len(cloze_steps)
-        output_file = path.join(path.dirname(path.dirname(self.model_path.rstrip("/"))), "cloze_mrr_fine.txt")
-        logging.info(f"Output_file: {path.abspath(output_file)}")
+        output_file = path.join(
+            path.dirname(path.dirname(self.model_path.rstrip("/"))), f"cloze_mrr_fine_{self.num_prev_steps}.jsonl"
+        )
+        logger.info(f"Output_file: {path.abspath(output_file)}")
 
         with open(output_file, "w") as f:
             for idx, (init_state, prev_actions, cur_state_str, _) in enumerate(self.dev_dataset):
@@ -137,7 +141,7 @@ class ClozeExperiment:
                 pred_state_indices, pred_state_str, instance_corr_state = self.predict_state(
                     inputs["input_ids"], attention_mask=inputs["attention_mask"], gt_state_str=cur_state_str
                 )
-                logging.info(f"Correct states: {instance_corr_state}")
+                logger.info(f"Correct states: {instance_corr_state}")
                 corr_state += instance_corr_state
 
                 pred_state_indices = pred_state_indices.repeat(num_options, 1)
@@ -164,6 +168,7 @@ class ClozeExperiment:
 
                 lang_loss = self.loss_fct(lm_logits.view(-1, len(self.tokenizer)), cloze_seq_ids.view(-1))
                 lang_loss = torch.sum(lang_loss.reshape_as(cloze_seq_ids), dim=1)
+                # lang_loss = torch.mean(lang_loss.reshape_as(cloze_seq_ids), dim=1)
 
                 sorted_list = [val.item() for val in list(torch.sort(lang_loss)[1])]
 
@@ -171,21 +176,22 @@ class ClozeExperiment:
                 cur_mrr = 1 / (rank_idx + 1)
 
                 instance_dict["input_string"] = input_string
-                instance_dict["gt_state"] = translate_nl_to_states(cur_state_str)
-                instance_dict["pred_state"] = translate_nl_to_states(pred_state_str)
+                instance_dict["gt_state"] = translate_nl_to_states(cur_state_str, domain="alchemy")
+                instance_dict["pred_state"] = translate_nl_to_states(pred_state_str, domain="alchemy")
 
-                instance_dict["corr_state"] = instance_corr_state
+                instance_dict["corr_state"] = str(instance_corr_state)
 
                 instance_dict["gt_action"] = cloze_steps[idx]
                 instance_dict["pred_action"] = cloze_steps[sorted_list[0]]
 
-                instance_dict["rank"] = rank_idx
+                instance_dict["rank"] = str(rank_idx)
                 instance_dict["sorted_list"] = sorted_list
                 # print(instance_dict)
 
-                f.write(json.dumps(instance_dict, indent=4) + "\n")
+                f.write(json.dumps(instance_dict) + "\n")
                 f.flush()
                 mrr += cur_mrr
+                # break
 
         mrr /= len(self.dev_dataset)
         state_tracking_acc = (corr_state * 100.0) / (total_instances * len(int_to_word))
@@ -193,7 +199,9 @@ class ClozeExperiment:
         print(f"{mrr: .3f}")
         # wandb.log({"dev/cloze_mrr": mrr})
 
-        output_file = path.join(path.dirname(path.dirname(self.model_path.rstrip("/"))), "cloze_mrr.txt")
+        output_file = path.join(
+            path.dirname(path.dirname(self.model_path.rstrip("/"))), f"cloze_mrr_{self.num_prev_steps}.txt"
+        )
         with open(output_file, "w") as f:
             f.write(f"{mrr:.3f}")
 
@@ -206,20 +214,21 @@ def main():
     args = parser.parse_args()
 
     assert path.exists(args.model_path)
-    cloze_file = path.join(args.base_dir, "cloze_data/alchemy.txt")
 
-    cloze_exp = ClozeExperiment(model_path=args.model_path, data_file=cloze_file)
-    model_name = get_model_name(args.model_path)
-    # wandb.init(
-    #     id=model_name,
-    #     project="state-probing",
-    #     resume=True,
-    #     notes="State probing",
-    #     tags="november",
-    #     config={},
-    # )
+    for num_prev_steps in range(4):
+        cloze_file = path.join(args.base_dir, f"cloze_data/alchemy_{num_prev_steps}.txt")
+        cloze_exp = ClozeExperiment(model_path=args.model_path, data_file=cloze_file, num_prev_steps=num_prev_steps)
+        model_name = get_model_name(args.model_path)
+        cloze_exp.perform_cloze_exp()
 
-    cloze_exp.perform_cloze_exp()
+        # wandb.init(
+        #     id=model_name,
+        #     project="state-probing",
+        #     resume=True,
+        #     notes="State probing",
+        #     tags="november",
+        #     config={},
+        # )
 
 
 if __name__ == "__main__":
