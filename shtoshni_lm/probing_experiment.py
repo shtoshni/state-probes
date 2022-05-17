@@ -2,16 +2,14 @@ import torch
 import argparse
 import json
 import itertools
-import os
 from os import path
 import logging
-from transformers import BartForConditionalGeneration, BartConfig, BartTokenizerFast
+from transformers import BartForConditionalGeneration, BartTokenizerFast
 
 from data.alchemy.utils import int_to_word, colors
-from data_transformer import convert_to_transformer_batches
 from data.alchemy.parseScone import loadData
-from shtoshni_lm.config import PROBE_START, PROBE_END
-from shtoshni_lm.data_transformer import represent_add_state_str
+from shtoshni_lm.config import PROBE_START
+from shtoshni_lm.data_transformer import represent_add_state_str, convert_to_transformer_batches
 import wandb
 
 
@@ -82,7 +80,7 @@ def get_all_states(tokenizer, device):
     for idx in range(len(int_to_word)):
         beaker_str = int_to_word[idx]
         prefix = f"the {beaker_str} beaker "
-        
+
         # state_seqs = [represent_add_state_str(prefix + state_suffix) for state_suffix in state_suffixes]
         # Not adding PROBE_END because we're truncating the state sequence to just the current state
         state_seqs = [(PROBE_START + prefix + state_suffix) for state_suffix in state_suffixes]
