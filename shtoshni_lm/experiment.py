@@ -1,10 +1,10 @@
-import itertools
 import sys
 import os
 import time
 import logging
 import random
 import wandb
+import json
 
 from os import path
 
@@ -18,7 +18,7 @@ from data.alchemy.parseScone import loadData
 from data_transformer import convert_to_transformer_batches
 from transformers import get_linear_schedule_with_warmup
 from shtoshni_lm.config import PROBE_START, PROBE_END
-from shtoshni_lm.data_transformer import represent_add_state_str
+from shtoshni_lm.data_transformer import represent_add_state_str, get_tokenized_seq
 from shtoshni_lm.probing_experiment import get_all_states
 
 
@@ -53,9 +53,7 @@ class Experiment(object):
             "num_stuck_evals": 0,
         }
         self.loss_fct = torch.nn.CrossEntropyLoss(ignore_index=-100, reduction="sum")
-        self.state_loss_fct = torch.nn.CrossEntropyLoss(
-            ignore_index=self.tokenizer.pad_token_id, reduction="none"
-        )
+        self.state_loss_fct = torch.nn.CrossEntropyLoss(ignore_index=self.tokenizer.pad_token_id, reduction="none")
 
         if self.eval_model:
             # Load the best checkpoint
@@ -97,23 +95,17 @@ class Experiment(object):
             self.model.cuda()
 
         if self.args.add_state:
-            self.tokenizer.add_special_tokens(
-                {"additional_special_tokens": [PROBE_START, PROBE_END]}
-            )
+            self.tokenizer.add_special_tokens({"additional_special_tokens": [PROBE_START, PROBE_END]})
             self.model.resize_token_embeddings(len(self.tokenizer))
             # Mask to mask out these additional tokens
             self.probing_tokens_mask = [0.0] * (len(self.tokenizer) - 2) + [1.0, 1.0]
 
     def _load_data(self):
         # loading data
-        self.dataset, _, _ = loadData(
-            split="train", kind="alchemy", synthetic=False, base_dir=self.args.base_dir
-        )
+        self.dataset, _, _ = loadData(split="train", kind="alchemy", synthetic=False, base_dir=self.args.base_dir)
         if self.args.num_train is not None:
             self.dataset = self.dataset[: self.args.num_train]
-        self.dev_dataset, _, _ = loadData(
-            split="dev", kind="alchemy", synthetic=False, base_dir=self.args.base_dir
-        )
+        self.dev_dataset, _, _ = loadData(split="dev", kind="alchemy", synthetic=False, base_dir=self.args.base_dir)
         if self.args.num_dev is not None:
             self.dev_dataset = self.dev_dataset[: self.args.num_dev]
 
@@ -196,13 +188,7 @@ class Experiment(object):
             # state_losses = []
             model.train()
 
-            for j, (
-                inputs,
-                lang_tgts,
-                state_tgts,
-                raw_state_targets,
-                init_states,
-            ) in enumerate(
+            for j, (inputs, lang_tgts, state_tgts, _, _) in enumerate(
                 convert_to_transformer_batches(
                     self.dataset,
                     self.tokenizer,
@@ -211,37 +197,24 @@ class Experiment(object):
                     domain="alchemy",
                     device=self.device,
                     add_state=self.args.add_state,
-                    randomize_state=self.args.randomize_state,
                 )
             ):
 
                 def handle_example():
                     if self.args.add_state:
                         if random.random() < 0.01:
-                            logger.info(
-                                f"\nEncoder sequence: {self.tokenizer.decode(inputs['input_ids'][0])}"
-                            )
+                            logger.info(f"\nEncoder sequence: {self.tokenizer.decode(inputs['input_ids'][0])}")
                             output_seq = torch.clone(state_tgts["input_ids"][0])
-                            output_seq.masked_fill_(
-                                output_seq == -100, self.tokenizer.pad_token_id
-                            )
-                            logger.info(
-                                f"Probing Decoder sequence: {self.tokenizer.decode(output_seq)}\n"
-                            )
+                            output_seq.masked_fill_(output_seq == -100, self.tokenizer.pad_token_id)
+                            logger.info(f"Probing Decoder sequence: {self.tokenizer.decode(output_seq)}\n")
 
                         target = state_tgts["input_ids"]
                     else:
                         if random.random() < 0.01:
-                            logger.info(
-                                f"\nEncoder sequence: {self.tokenizer.decode(inputs['input_ids'][0])}"
-                            )
+                            logger.info(f"\nEncoder sequence: {self.tokenizer.decode(inputs['input_ids'][0])}")
                             output_seq = torch.clone(lang_tgts["input_ids"][0])
-                            output_seq.masked_fill_(
-                                output_seq == -100, self.tokenizer.pad_token_id
-                            )
-                            logger.info(
-                                f"Simple Decoder sequence: {self.tokenizer.decode(output_seq)}\n"
-                            )
+                            output_seq.masked_fill_(output_seq == -100, self.tokenizer.pad_token_id)
+                            logger.info(f"Simple Decoder sequence: {self.tokenizer.decode(output_seq)}\n")
 
                         target = lang_tgts["input_ids"]
 
@@ -284,9 +257,7 @@ class Experiment(object):
             )
             dev_loss = self.periodic_model_eval()
             if self.args.use_wandb:
-                wandb.log(
-                    {"dev/loss": dev_loss, "batch": self.train_info["global_steps"]}
-                )
+                wandb.log({"dev/loss": dev_loss, "batch": self.train_info["global_steps"]})
                 wandb.log({"dev/best_loss": self.train_info["best_val_loss"]})
 
             # Get elapsed time
@@ -315,23 +286,17 @@ class Experiment(object):
         for seq_idx, all_seq in enumerate(self.all_seqs):
             return_dict = model(
                 input_ids=input_ids.repeat(self.num_states, 1).to(self.device),
-                attention_mask=attention_mask.repeat(self.num_states, 1).to(
-                    self.device
-                ),
+                attention_mask=attention_mask.repeat(self.num_states, 1).to(self.device),
                 labels=all_seq,
                 return_dict=True,
             )
 
             lm_logits = return_dict.logits
-            lang_loss = self.state_loss_fct(
-                lm_logits.view(-1, len(self.tokenizer)), all_seq.view(-1)
-            )
+            lang_loss = self.state_loss_fct(lm_logits.view(-1, len(self.tokenizer)), all_seq.view(-1))
             lang_loss = torch.sum(lang_loss.reshape_as(all_seq), dim=1)
 
             argmin = torch.argmin(lang_loss, dim=0).item()
-            pred_state = self.tokenizer.decode(
-                all_seq[argmin], skip_special_tokens=True
-            ).strip()
+            pred_state = self.tokenizer.decode(all_seq[argmin], skip_special_tokens=True).strip()
             pred_state_seq.append(pred_state)
 
             gt_state = gt_state_list[seq_idx].strip()
@@ -352,26 +317,24 @@ class Experiment(object):
         total_state_pred = 0
 
         batchsize = 1
-        for j, (
-            inputs,
-            lang_tgts,
-            state_tgts,
-            raw_state_targets,
-            init_states,
-        ) in enumerate(
-            convert_to_transformer_batches(
-                dataset,
-                self.tokenizer,
-                batchsize=batchsize,
-                # self.args.batchsize,
-                domain="alchemy",
-                device=self.device,
-                add_state=self.args.add_state,
-                training=False,
-            )
+
+        if self.args.add_state:
+            output_file = path.join(self.args.model_dir, "state_tracking.jsonl")
+            state_writer = open(output_file, "w")
+
+        for (inputs, lang_tgts, state_tgts, _, _) in convert_to_transformer_batches(
+            dataset,
+            self.tokenizer,
+            batchsize=batchsize,
+            # self.args.batchsize,
+            domain="alchemy",
+            device=self.device,
+            add_state=self.args.add_state,
+            training=False,
         ):
-            # Step 1: Predict state
+
             if self.args.add_state:
+                # Step 1: Predict state
                 gt_state_str = state_tgts["state_str"][0]
                 pred_state_indices, pred_state_str, corr_state = self.predict_state(
                     model,
@@ -382,18 +345,12 @@ class Experiment(object):
                 total_state_corr += corr_state
                 total_state_pred += len(int_to_word) * batchsize
 
-                if random.random() < 0.01:
-                    print(pred_state_str, corr_state)
+                output_dict = {"gt": gt_state_str, "pred": pred_state_str, "corr": corr_state}
+                state_writer.write(json.dumps(output_dict, indent=4) + "\n")
 
                 lang_target = lang_tgts["original_text"][0]
                 labels = pred_state_str + lang_target
-                label_ids = self.tokenizer(
-                    [labels],
-                    return_tensors="pt",
-                    padding=True,
-                    truncation=False,
-                    add_special_tokens=False,
-                )["input_ids"].to(self.device)
+                label_ids = get_tokenized_seq(self.tokenizer, [labels])["input_ids"].to(self.device)
             else:
                 label_ids = lang_tgts["input_ids"]
 
@@ -418,14 +375,12 @@ class Experiment(object):
                 num_state_tokens = len(pred_state_indices)
                 lm_logits = lm_logits[num_state_tokens:]
 
-            num_tokens = torch.sum(
-                (lang_tgts["input_ids"] != -100).to(torch.float)
-            ).item()
-
             lang_loss = self.loss_fct(lm_logits, lang_tgts["input_ids"].view(-1))
-            # logger.info(f"Manual loss: {lang_loss: .3f}, Automatic loss: {return_dict.loss: .3f}")
             tot_val_loss += lang_loss.item()
+            # Num instances
             n_val += len(inputs["input_ids"])
+            # Num tokens
+            num_tokens = torch.sum((lang_tgts["input_ids"] != -100).to(torch.float)).item()
             total_tokens += num_tokens
 
         logger.info(f"Total instances: {n_val}, Num tokens: {total_tokens}")
@@ -436,6 +391,8 @@ class Experiment(object):
             if self.args.use_wandb:
                 wandb.log({"State Tracking Acc": state_tracking_acc})
 
+            state_writer.close()
+
         avg_val_loss = tot_val_loss / total_tokens
         return avg_val_loss
 
@@ -445,9 +402,7 @@ class Experiment(object):
         model.eval()
 
         avg_val_loss = self.get_dataset_loss(model, self.dev_dataset)
-        logger.info(
-            f"epoch {self.train_info['num_epochs']}, avg val loss: {avg_val_loss}"
-        )
+        logger.info(f"epoch {self.train_info['num_epochs']}, avg val loss: {avg_val_loss}")
         if avg_val_loss <= self.train_info["best_val_loss"]:
             logger.info("NEW BEST MODEL")
             self.train_info["best_val_loss"] = avg_val_loss
@@ -464,9 +419,7 @@ class Experiment(object):
         model = self.model
         model.eval()
         avg_val_loss = self.get_dataset_loss(model, self.dev_dataset)
-        logger.info(
-            f"epoch {self.train_info['num_epochs']}, avg val loss: {avg_val_loss}"
-        )
+        logger.info(f"epoch {self.train_info['num_epochs']}, avg val loss: {avg_val_loss}")
         return avg_val_loss
 
     def _load_model(self, location: str, last_checkpoint=True) -> None:
@@ -485,12 +438,10 @@ class Experiment(object):
         logger.info("Loading document encoder from %s" % path.abspath(doc_encoder_dir))
 
         # Load the encoder
-        self.model = BartForConditionalGeneration.from_pretrained(
-            pretrained_model_name_or_path=doc_encoder_dir
-        ).to(self.device)
-        self.tokenizer = BartTokenizerFast.from_pretrained(
-            pretrained_model_name_or_path=doc_encoder_dir
+        self.model = BartForConditionalGeneration.from_pretrained(pretrained_model_name_or_path=doc_encoder_dir).to(
+            self.device
         )
+        self.tokenizer = BartTokenizerFast.from_pretrained(pretrained_model_name_or_path=doc_encoder_dir)
 
         if last_checkpoint:
             # If resuming training, restore the optimizer state as well

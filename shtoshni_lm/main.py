@@ -10,9 +10,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--lr", type=float, default=1e-5)
     parser.add_argument("--batchsize", type=int, default=24)
-    parser.add_argument(
-        "--encode_init_state", type=str, default="NL", choices=[False, "raw", "NL"]
-    )
+    parser.add_argument("--encode_init_state", type=str, default="NL", choices=[False, "raw", "NL"])
     parser.add_argument("--eval", default=False, action="store_true")
     parser.add_argument("--seed", type=int, default=10)
     parser.add_argument("--epochs", type=int, default=10)
@@ -20,9 +18,7 @@ def main():
     parser.add_argument("--num_dev", type=int, default=None)
     parser.add_argument("--patience", type=int, default=2)
     parser.add_argument("--base_model_dir", type=str, default="models")
-    parser.add_argument(
-        "--model_size", type=str, default="base", choices=["base", "large"]
-    )
+    parser.add_argument("--model_size", type=str, default="base", choices=["base", "large"])
     parser.add_argument("--base_dir", type=str, default=None)
     parser.add_argument("--use_wandb", default=False, action="store_true")
 
@@ -32,24 +28,11 @@ def main():
         type=str,
         default=None,
     )
-    parser.add_argument(
-        "--state_repr", default="text", choices=["text", "raw"], type=str
-    )
-    parser.add_argument(
-        "--randomize_state",
-        default=False,
-        action="store_true",
-        help="Randomize states in a batch to setup a control task where model is "
-        "fed random state rather than actual state",
-    )
+    parser.add_argument("--state_repr", default="text", choices=["text", "raw"], type=str)
 
     args = parser.parse_args()
 
-    if args.randomize_state:
-        model_dir_str = "random_"
-    else:
-        model_dir_str = ""
-
+    model_dir_str = ""
     model_dir_str += "size_" + str(args.model_size)
     model_dir_str += "_epochs_" + str(args.epochs)
     model_dir_str += "_patience_" + str(args.patience)

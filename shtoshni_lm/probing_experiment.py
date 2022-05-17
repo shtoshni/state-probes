@@ -11,6 +11,7 @@ from data.alchemy.utils import int_to_word, colors
 from data_transformer import convert_to_transformer_batches
 from data.alchemy.parseScone import loadData
 from shtoshni_lm.config import PROBE_START, PROBE_END
+from shtoshni_lm.data_transformer import represent_add_state_str
 import wandb
 
 
@@ -49,9 +50,7 @@ def get_all_beaker_state_suffixes():
         if beaker_amount == 0:
             all_beaker_states.add("_")
         else:
-            all_beaker_states = all_beaker_states.union(
-                set(itertools.product(d_colors, repeat=beaker_amount))
-            )
+            all_beaker_states = all_beaker_states.union(set(itertools.product(d_colors, repeat=beaker_amount)))
 
     outputs = set()
     for beaker_state in all_beaker_states:
@@ -83,10 +82,10 @@ def get_all_states(tokenizer, device):
     for idx in range(len(int_to_word)):
         beaker_str = int_to_word[idx]
         prefix = f"the {beaker_str} beaker "
-        state_seqs = [
-            (PROBE_START + prefix + state_suffix + PROBE_END)
-            for state_suffix in state_suffixes
-        ]
+        
+        # state_seqs = [represent_add_state_str(prefix + state_suffix) for state_suffix in state_suffixes]
+        # Not adding PROBE_END because we're truncating the state sequence to just the current state
+        state_seqs = [(PROBE_START + prefix + state_suffix) for state_suffix in state_suffixes]
 
         state_seq_ids = tokenizer.batch_encode_plus(
             state_seqs, padding=True, add_special_tokens=False, return_tensors="pt"
@@ -109,24 +108,18 @@ def probing_exp(model_path: str, base_dir: str):
     if torch.cuda.is_available():
         model = model.cuda()
 
-    loss_fct = torch.nn.CrossEntropyLoss(
-        ignore_index=tokenizer.pad_token_id, reduction="none"
-    )
+    loss_fct = torch.nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id, reduction="none")
     all_seqs = get_all_states(tokenizer, device)
     num_states = all_seqs[0].shape[0]
 
     total = 0
     corr = 0
 
-    output_file = path.join(
-        path.dirname(path.dirname(model_path.rstrip("/"))), "cloze_state.txt"
-    )
+    output_file = path.join(path.dirname(path.dirname(model_path.rstrip("/"))), "cloze_state.txt")
     logging.info(f"Output_file: {path.abspath(output_file)}")
 
     with open(output_file, "w") as f:
-        for idx, (init_state, prev_actions, cur_state, next_action) in enumerate(
-            dev_dataset
-        ):
+        for idx, (init_state, prev_actions, cur_state, next_action) in enumerate(dev_dataset):
             input_string = init_state + ". " + prev_actions
             inputs = tokenizer(
                 input_string,
@@ -141,23 +134,17 @@ def probing_exp(model_path: str, base_dir: str):
             for seq_idx, all_seq in enumerate(all_seqs):
                 return_dict = model(
                     input_ids=inputs["input_ids"].repeat(num_states, 1).to(device),
-                    attention_mask=inputs["attention_mask"]
-                    .repeat(num_states, 1)
-                    .to(device),
+                    attention_mask=inputs["attention_mask"].repeat(num_states, 1).to(device),
                     labels=all_seq,
                     return_dict=True,
                 )
 
                 lm_logits = return_dict.logits
-                lang_loss = loss_fct(
-                    lm_logits.view(-1, len(tokenizer)), all_seq.view(-1)
-                )
+                lang_loss = loss_fct(lm_logits.view(-1, len(tokenizer)), all_seq.view(-1))
                 lang_loss = torch.sum(lang_loss.reshape_as(all_seq), dim=1)
 
                 argmin = torch.argmin(lang_loss, dim=0).item()
-                pred_state = tokenizer.decode(
-                    all_seq[argmin], skip_special_tokens=True
-                ).strip()
+                pred_state = tokenizer.decode(all_seq[argmin], skip_special_tokens=True).strip()
                 gt_state = state_target_str[seq_idx].strip()
 
                 logger.info(f"{pred_state}, {gt_state}")
