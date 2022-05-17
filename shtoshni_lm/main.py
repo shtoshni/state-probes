@@ -21,14 +21,24 @@ def main():
     parser.add_argument("--model_size", type=str, default="base", choices=["base", "large"])
     parser.add_argument("--base_dir", type=str, default=None)
     parser.add_argument("--use_wandb", default=False, action="store_true")
+    parser.add_argument("--rap_prob", type=float, default=0.0, help="Probability of using state")
 
     parser.add_argument(
         "--add_state",
-        choices=["all", "targeted", "random", None],
+        choices=["all"],  # "targeted", "random", None],
         type=str,
         default=None,
     )
-    parser.add_argument("--state_repr", default="text", choices=["text", "raw"], type=str)
+    parser.add_argument(
+        "--state_repr",
+        default="as",
+        choices=[
+            "ras",  # Randomly added state
+            "explanation",  # State is always added; Treated as an explanation
+            "multitask",  # Multitask with state prediction
+        ],
+        type=str,
+    )
 
     args = parser.parse_args()
 
@@ -41,6 +51,10 @@ def main():
         model_dir_str += "_state"
         model_dir_str += f"_{args.add_state}"
         model_dir_str += f"_{args.state_repr}"
+
+        if args.state_repr == "ras" or args.state_repr == "multitask":
+            assert args.rap_prob > 0.0
+            model_dir_str += f"_rap_{args.rap_prob}"
 
     if args.num_train is not None:
         model_dir_str += f"_num_train_{args.num_train}"

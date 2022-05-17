@@ -35,6 +35,7 @@ def convert_to_transformer_batches(
     device="cuda",
     add_state="random",
     training=True,
+    state_repr="explanation",
 ):
     """
     state_targets_type (str): what to return for `state_tgt_enc` and `state_targets`
@@ -100,29 +101,27 @@ def convert_to_transformer_batches(
             target_list = []
             state_slice_list = []
             for (state_target, lang_target, beaker_target) in zip(state_targets, lang_targets, beaker_targets):
-                if add_state == "all":
-                    # Randomize the state slice
+                if training:
                     beaker_states = state_target.split(", ")
-                    if training:
-                        random.shuffle(beaker_states)
+                    random.shuffle(beaker_states)
                     state_slice = ", ".join(beaker_states)
-                elif add_state == "targeted":
-                    # beaker_idx = identify_beaker_idx(lang_target)
-                    if beaker_target == -1:
-                        state_slice = random.choice(state_target.split(","))
-                    else:
-                        state_slice = state_target.split(",")[beaker_target]
-                elif add_state == "random":
-                    state_slice = random.choice(state_target.split(","))
-                else:
-                    raise ValueError(add_state)
 
-                target_list.append(represent_add_state_str(state_slice) + lang_target)
+                    if state_repr == "multitask":
+                        target_list.append(represent_add_state_str(state_slice))
+                    else:
+                        target_list.append(represent_add_state_str(state_slice) + lang_target)
+
+                else:
+                    state_slice = state_target
+
                 state_slice_list.append(state_slice)
 
-            state_tgt_enc = get_tokenized_seq(tokenizer, target_list).to(device)
+            if training:
+                state_tgt_enc = get_tokenized_seq(tokenizer, target_list).to(device)
+                state_tgt_enc["input_ids"].masked_fill_(state_tgt_enc["input_ids"] == tokenizer.pad_token_id, -100)
+                state_tgt_enc["input_ids"].to(device)
+            else:
+                state_tgt_enc = {}
             state_tgt_enc["state_str"] = state_slice_list
-            state_tgt_enc["input_ids"].masked_fill_(state_tgt_enc["input_ids"] == tokenizer.pad_token_id, -100)
-            state_tgt_enc["input_ids"].to(device)
 
         yield inp_enc, lang_tgt_enc, state_tgt_enc, state_targets, init_states

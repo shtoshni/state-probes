@@ -179,44 +179,51 @@ class Experiment(object):
             self.optimizer,
             self.optim_scheduler,
         )
-        model.train()
 
-        start_time = time.time()
         while True:
             logger.info("Steps done %d" % (self.train_info["global_steps"]))
             lang_train_losses = []
-            # state_losses = []
             model.train()
+            start_time = time.time()
 
             for j, (inputs, lang_tgts, state_tgts, _, _) in enumerate(
                 convert_to_transformer_batches(
                     self.dataset,
                     self.tokenizer,
                     self.args.batchsize,
+                    # Training information
                     random=random,
+                    training=True,
                     domain="alchemy",
-                    device=self.device,
+                    # State variable
                     add_state=self.args.add_state,
+                    state_repr=self.args.state_repr,
+                    # Device info
+                    device=self.device,
                 )
             ):
 
                 def handle_example():
-                    if self.args.add_state:
-                        if random.random() < 0.01:
-                            logger.info(f"\nEncoder sequence: {self.tokenizer.decode(inputs['input_ids'][0])}")
-                            output_seq = torch.clone(state_tgts["input_ids"][0])
-                            output_seq.masked_fill_(output_seq == -100, self.tokenizer.pad_token_id)
-                            logger.info(f"Probing Decoder sequence: {self.tokenizer.decode(output_seq)}\n")
-
+                    if self.args.state_repr == "explanation":
                         target = state_tgts["input_ids"]
-                    else:
-                        if random.random() < 0.01:
-                            logger.info(f"\nEncoder sequence: {self.tokenizer.decode(inputs['input_ids'][0])}")
-                            output_seq = torch.clone(lang_tgts["input_ids"][0])
-                            output_seq.masked_fill_(output_seq == -100, self.tokenizer.pad_token_id)
-                            logger.info(f"Simple Decoder sequence: {self.tokenizer.decode(output_seq)}\n")
 
+                    elif self.args.state_repr == "ras":
+                        if random.random() < self.args.rap_prob:
+                            target = state_tgts["input_ids"]
+                        else:
+                            target = lang_tgts["input_ids"]
+                    else:
                         target = lang_tgts["input_ids"]
+
+                    if random.random() < 0.01:
+                        logger.info(f"\nEncoder sequence: {self.tokenizer.decode(inputs['input_ids'][0])}")
+                        output_seq = torch.clone(state_tgts["input_ids"][0])
+                        output_seq.masked_fill_(output_seq == -100, self.tokenizer.pad_token_id)
+                        logger.info(f"Probing Decoder sequence: {self.tokenizer.decode(output_seq)}\n")
+
+                        output_seq = torch.clone(lang_tgts["input_ids"][0])
+                        output_seq.masked_fill_(output_seq == -100, self.tokenizer.pad_token_id)
+                        logger.info(f"Simple Decoder sequence: {self.tokenizer.decode(output_seq)}\n")
 
                     return_dict = model(
                         input_ids=inputs["input_ids"],
@@ -226,7 +233,40 @@ class Experiment(object):
                     )
 
                     loss = return_dict.loss
+                    return update_model(loss)
 
+                def handle_example_multitask():
+                    return_dict_lang = model(
+                        input_ids=inputs["input_ids"],
+                        attention_mask=inputs["attention_mask"],
+                        labels=lang_tgts["input_ids"],
+                        return_dict=True,
+                    )
+
+                    return_dict_state = model(
+                        input_ids=inputs["input_ids"],
+                        attention_mask=inputs["attention_mask"],
+                        labels=state_tgts["input_ids"],
+                        return_dict=True,
+                    )
+
+                    if random.random() < 0.01:
+                        logger.info(f"\nEncoder sequence: {self.tokenizer.decode(inputs['input_ids'][0])}")
+                        output_seq = torch.clone(state_tgts["input_ids"][0])
+                        output_seq.masked_fill_(output_seq == -100, self.tokenizer.pad_token_id)
+                        logger.info(f"Probing Decoder sequence: {self.tokenizer.decode(output_seq)}\n")
+
+                        output_seq = torch.clone(lang_tgts["input_ids"][0])
+                        output_seq.masked_fill_(output_seq == -100, self.tokenizer.pad_token_id)
+                        logger.info(f"Simple Decoder sequence: {self.tokenizer.decode(output_seq)}\n")
+
+                    # Multitasking loss weighed by RAP probability
+                    loss = (
+                        return_dict_lang.loss * (1 - self.args.rap_prob) + return_dict_state.loss * self.args.rap_prob
+                    )
+                    return update_model(loss)
+
+                def update_model(loss):
                     optimizer.zero_grad()
                     loss.backward()
                     optimizer.step()
@@ -238,7 +278,11 @@ class Experiment(object):
 
                     return loss_val
 
-                lang_loss = handle_example()
+                if self.args.add_state and self.args.state_repr == "multitask":
+                    lang_loss = handle_example_multitask()
+                else:
+                    lang_loss = handle_example()
+
                 if self.args.use_wandb:
                     wandb.log(
                         {
@@ -263,7 +307,6 @@ class Experiment(object):
             # Get elapsed time
             elapsed_time = time.time() - start_time
 
-            start_time = time.time()
             logger.info(
                 "Steps: %d, Log-loss: %.3f, Best log-loss: %.3f, Time: %.2f\n\n"
                 % (
@@ -313,10 +356,10 @@ class Experiment(object):
         total_tokens = 0
         n_val = 0
         tot_val_loss = 0
-        total_state_corr = 0
-        total_state_pred = 0
-
-        batchsize = 1
+        # Track state-level prediction stats
+        total_state_corr, total_state_pred = 0, 0
+        # Track entity-level prediction stats
+        total_entity_corr, total_entity_pred = 0, 0
 
         if self.args.add_state:
             output_file = path.join(self.args.model_dir, "state_tracking.jsonl")
@@ -325,31 +368,41 @@ class Experiment(object):
         for (inputs, lang_tgts, state_tgts, _, _) in convert_to_transformer_batches(
             dataset,
             self.tokenizer,
-            batchsize=batchsize,
-            # self.args.batchsize,
+            batchsize=1,  # We set dev batchsize to 1
             domain="alchemy",
             device=self.device,
             add_state=self.args.add_state,
             training=False,
+            state_repr=self.args.state_repr,
         ):
 
             if self.args.add_state:
                 # Step 1: Predict state
-                gt_state_str = state_tgts["state_str"][0]
+                gt_state_str = state_tgts["state_str"][0]  # Indexing with 0 because the batchsize is 1
                 pred_state_indices, pred_state_str, corr_state = self.predict_state(
                     model,
                     input_ids=inputs["input_ids"],
                     attention_mask=inputs["attention_mask"],
                     gt_state_str=gt_state_str,
                 )
-                total_state_corr += corr_state
-                total_state_pred += len(int_to_word) * batchsize
+                # Update state prediction stats
+                total_state_corr += int(corr_state == len(int_to_word))
+                total_state_pred += 1
+
+                # Update entity prediction stats
+                total_entity_corr += corr_state
+                total_entity_pred += len(int_to_word)
 
                 output_dict = {"gt": gt_state_str, "pred": pred_state_str, "corr": corr_state}
                 state_writer.write(json.dumps(output_dict, indent=4) + "\n")
 
-                lang_target = lang_tgts["original_text"][0]
-                labels = pred_state_str + lang_target
+                lang_target = lang_tgts["original_text"][0]  # Indexing with 0 because the batchsize is 1
+
+                if self.args.state_repr == "explanation":
+                    # Predicted state is part of decoder input
+                    labels = pred_state_str + lang_target
+                else:
+                    labels = lang_target
                 label_ids = get_tokenized_seq(self.tokenizer, [labels])["input_ids"].to(self.device)
             else:
                 label_ids = lang_tgts["input_ids"]
@@ -371,9 +424,11 @@ class Experiment(object):
                     device=inputs["input_ids"].device,
                 )
                 lm_logits = lm_logits * (1 - logit_mask) + logit_mask * (-1e10)
-                # Remove state tokens from loss
-                num_state_tokens = len(pred_state_indices)
-                lm_logits = lm_logits[num_state_tokens:]
+
+                if self.args.state_repr == "explanation":
+                    # Remove predicted state tokens from loss calculation
+                    num_state_tokens = len(pred_state_indices)
+                    lm_logits = lm_logits[num_state_tokens:]
 
             lang_loss = self.loss_fct(lm_logits, lang_tgts["input_ids"].view(-1))
             tot_val_loss += lang_loss.item()
@@ -390,6 +445,12 @@ class Experiment(object):
             logger.info(f"State tracking accuracy: {state_tracking_acc:.2f}")
             if self.args.use_wandb:
                 wandb.log({"State Tracking Acc": state_tracking_acc})
+
+            # Entity tracking accuracy
+            entity_tracking_acc = (100.0 * total_entity_corr) / total_entity_pred
+            logger.info(f"Entity tracking accuracy: {entity_tracking_acc:.2f}")
+            if self.args.use_wandb:
+                wandb.log({"Entity Tracking Acc": entity_tracking_acc})
 
             state_writer.close()
 
