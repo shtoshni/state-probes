@@ -3,14 +3,13 @@ import argparse
 import wandb
 from os import path
 
-from experiment import Experiment
+from shtoshni_lm.experiment import Experiment
 
 
-def main():
+def main(command_options=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--lr", type=float, default=1e-5)
     parser.add_argument("--batchsize", type=int, default=24)
-    parser.add_argument("--encode_init_state", type=str, default="NL", choices=[False, "raw", "NL"])
     parser.add_argument("--eval", default=False, action="store_true")
     parser.add_argument("--seed", type=int, default=10)
     parser.add_argument("--epochs", type=int, default=10)
@@ -19,28 +18,34 @@ def main():
     parser.add_argument("--patience", type=int, default=2)
     parser.add_argument("--base_model_dir", type=str, default="models")
     parser.add_argument("--model_size", type=str, default="base", choices=["base", "large"])
-    parser.add_argument("--base_dir", type=str, default=None)
     parser.add_argument("--use_wandb", default=False, action="store_true")
     parser.add_argument("--rap_prob", type=float, default=0.0, help="Probability of using state")
 
     parser.add_argument(
         "--add_state",
-        choices=["all"],  # "targeted", "random", None],
-        type=str,
-        default=None,
-    )
-    parser.add_argument(
-        "--state_repr",
-        default="as",
+        default="",
         choices=[
             "ras",  # Randomly added state
             "explanation",  # State is always added; Treated as an explanation
             "multitask",  # Multitask with state prediction
+            "",
         ],
         type=str,
+        help="Mechanism for adding state (via random addition/multitasking/explanation i.e. always)",
     )
 
-    args = parser.parse_args()
+    parser.add_argument(
+        "--state_repr",
+        choices=["all"],  # "targeted", "random", None],
+        type=str,
+        default="all",
+        help="Representation of state string",
+    )
+
+    if command_options is None:
+        args = parser.parse_args()
+    else:
+        args = parser.parse_args(command_options)
 
     model_dir_str = ""
     model_dir_str += "size_" + str(args.model_size)
@@ -52,7 +57,7 @@ def main():
         model_dir_str += f"_{args.add_state}"
         model_dir_str += f"_{args.state_repr}"
 
-        if args.state_repr == "ras" or args.state_repr == "multitask":
+        if args.add_state == "ras" or args.add_state == "multitask":
             assert args.rap_prob > 0.0
             model_dir_str += f"_rap_{args.rap_prob}"
 

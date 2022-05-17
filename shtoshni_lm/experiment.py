@@ -13,9 +13,9 @@ from transformers import BartTokenizerFast
 from transformers import BartForConditionalGeneration
 import numpy as np
 
-from data.alchemy.utils import int_to_word, colors
+from data.alchemy.utils import int_to_word
 from data.alchemy.parseScone import loadData
-from data_transformer import convert_to_transformer_batches
+from shtoshni_lm.data_transformer import convert_to_transformer_batches
 from transformers import get_linear_schedule_with_warmup
 from shtoshni_lm.config import PROBE_START, PROBE_END
 from shtoshni_lm.data_transformer import represent_add_state_str, get_tokenized_seq
@@ -102,10 +102,10 @@ class Experiment(object):
 
     def _load_data(self):
         # loading data
-        self.dataset, _, _ = loadData(split="train", kind="alchemy", synthetic=False, base_dir=self.args.base_dir)
+        self.dataset, _, _ = loadData(split="train", kind="alchemy", synthetic=False, base_dir=None)
         if self.args.num_train is not None:
             self.dataset = self.dataset[: self.args.num_train]
-        self.dev_dataset, _, _ = loadData(split="dev", kind="alchemy", synthetic=False, base_dir=self.args.base_dir)
+        self.dev_dataset, _, _ = loadData(split="dev", kind="alchemy", synthetic=False, base_dir=None)
         if self.args.num_dev is not None:
             self.dev_dataset = self.dev_dataset[: self.args.num_dev]
 
@@ -204,10 +204,10 @@ class Experiment(object):
             ):
 
                 def handle_example():
-                    if self.args.state_repr == "explanation":
+                    if self.args.add_state == "explanation":
                         target = state_tgts["input_ids"]
 
-                    elif self.args.state_repr == "ras":
+                    elif self.args.add_state == "ras":
                         if random.random() < self.args.rap_prob:
                             target = state_tgts["input_ids"]
                         else:
@@ -278,7 +278,7 @@ class Experiment(object):
 
                     return loss_val
 
-                if self.args.add_state and self.args.state_repr == "multitask":
+                if self.args.add_state == "multitask":
                     lang_loss = handle_example_multitask()
                 else:
                     lang_loss = handle_example()
@@ -398,7 +398,7 @@ class Experiment(object):
 
                 lang_target = lang_tgts["original_text"][0]  # Indexing with 0 because the batchsize is 1
 
-                if self.args.state_repr == "explanation":
+                if self.args.add_state == "explanation":
                     # Predicted state is part of decoder input
                     labels = pred_state_str + lang_target
                 else:
@@ -425,7 +425,7 @@ class Experiment(object):
                 )
                 lm_logits = lm_logits * (1 - logit_mask) + logit_mask * (-1e10)
 
-                if self.args.state_repr == "explanation":
+                if self.args.add_state == "explanation":
                     # Remove predicted state tokens from loss calculation
                     num_state_tokens = len(pred_state_indices)
                     lm_logits = lm_logits[num_state_tokens:]

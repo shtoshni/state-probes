@@ -33,9 +33,9 @@ def convert_to_transformer_batches(
     random=None,
     domain="alchemy",
     device="cuda",
-    add_state="random",
     training=True,
-    state_repr="explanation",
+    add_state="explanation",
+    state_repr="all",
 ):
     """
     state_targets_type (str): what to return for `state_tgt_enc` and `state_targets`
@@ -106,7 +106,7 @@ def convert_to_transformer_batches(
                     random.shuffle(beaker_states)
                     state_slice = ", ".join(beaker_states)
 
-                    if state_repr == "multitask":
+                    if add_state == "multitask":
                         target_list.append(represent_add_state_str(state_slice))
                     else:
                         target_list.append(represent_add_state_str(state_slice) + lang_target)
