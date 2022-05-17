@@ -102,10 +102,12 @@ class Experiment(object):
 
     def _load_data(self):
         # loading data
-        self.dataset, _, _ = loadData(split="train", kind="alchemy", synthetic=False, base_dir=None)
+        self.dataset, _, _ = loadData(split="train", kind="alchemy", synthetic=False, base_dir=self.args.base_data_dir)
         if self.args.num_train is not None:
             self.dataset = self.dataset[: self.args.num_train]
-        self.dev_dataset, _, _ = loadData(split="dev", kind="alchemy", synthetic=False, base_dir=None)
+        self.dev_dataset, _, _ = loadData(
+            split="dev", kind="alchemy", synthetic=False, base_dir=self.args.base_data_dir
+        )
         if self.args.num_dev is not None:
             self.dev_dataset = self.dev_dataset[: self.args.num_dev]
 
@@ -217,9 +219,10 @@ class Experiment(object):
 
                     if random.random() < 0.01:
                         logger.info(f"\nEncoder sequence: {self.tokenizer.decode(inputs['input_ids'][0])}")
-                        output_seq = torch.clone(state_tgts["input_ids"][0])
-                        output_seq.masked_fill_(output_seq == -100, self.tokenizer.pad_token_id)
-                        logger.info(f"Probing Decoder sequence: {self.tokenizer.decode(output_seq)}\n")
+                        if self.args.add_state:
+                            output_seq = torch.clone(state_tgts["input_ids"][0])
+                            output_seq.masked_fill_(output_seq == -100, self.tokenizer.pad_token_id)
+                            logger.info(f"Probing Decoder sequence: {self.tokenizer.decode(output_seq)}\n")
 
                         output_seq = torch.clone(lang_tgts["input_ids"][0])
                         output_seq.masked_fill_(output_seq == -100, self.tokenizer.pad_token_id)

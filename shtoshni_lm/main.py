@@ -17,6 +17,7 @@ def main(command_options=None):
     parser.add_argument("--num_dev", type=int, default=None)
     parser.add_argument("--patience", type=int, default=2)
     parser.add_argument("--base_model_dir", type=str, default="models")
+    parser.add_argument("--base_data_dir", type=str, default=None)
     parser.add_argument("--model_size", type=str, default="base", choices=["base", "large"])
     parser.add_argument("--use_wandb", default=False, action="store_true")
     parser.add_argument("--rap_prob", type=float, default=0.0, help="Probability of using state")
