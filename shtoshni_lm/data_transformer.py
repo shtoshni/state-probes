@@ -23,8 +23,16 @@ def represent_add_state_str(state_str):
     return PROBE_START + state_str + PROBE_END
 
 
-def get_tokenized_decoder_seq(tokenizer, seq_list):
-    return tokenizer(seq_list, return_tensors="pt", padding=True, truncation=False, add_special_tokens=False)
+def get_tokenized_decoder_seq(tokenizer, seq_list, add_end_token: bool):
+    if add_end_token:
+        special_tok_seq = tokenizer(
+            seq_list, return_tensors="pt", padding=True, truncation=False, add_special_tokens=True
+        )
+        # Remove the starting token <sos> since we are producing the label sequence
+        special_tok_seq["input_ids"] = special_tok_seq["input_ids"][:, 1:]
+        return special_tok_seq
+    else:
+        return tokenizer(seq_list, return_tensors="pt", padding=True, truncation=False, add_special_tokens=False)
 
 
 def get_tokenized_encoder_seq(tokenizer, seq_list):
@@ -71,13 +79,12 @@ def get_all_states(tokenizer, device):
         beaker_str = int_to_word[idx]
         prefix = f"the {beaker_str} beaker "
 
-        # state_seqs = [represent_add_state_str(prefix + state_suffix) for state_suffix in state_suffixes]
-        # Not adding PROBE_END because we're truncating the state sequence to just the current state
         state_seqs = [(PROBE_START + prefix + state_suffix + PROBE_END) for state_suffix in state_suffixes]
-
-        state_seq_ids = tokenizer.batch_encode_plus(
-            state_seqs, padding=True, add_special_tokens=False, return_tensors="pt"
-        )["input_ids"].to(device)
+        # Add end token to state label sequence
+        state_seq_ids = get_tokenized_decoder_seq(tokenizer, state_seqs, add_end_token=True)["input_ids"].to(device)
+        # tokenizer.batch_encode_plus(
+        #     state_seqs, padding=True, add_special_tokens=False, return_tensors="pt"
+        # )["input_ids"].to(device)
 
         all_seqs.append(state_seq_ids)
 
@@ -142,7 +149,7 @@ def convert_to_transformer_batches(
         inp_enc = get_tokenized_encoder_seq(tokenizer, inps).to(device)
 
         # Encode outputs
-        lang_tgt_enc = get_tokenized_decoder_seq(tokenizer, lang_targets).to(device)
+        lang_tgt_enc = get_tokenized_decoder_seq(tokenizer, lang_targets, add_end_token=True).to(device)
 
         inp_enc["original_text"] = inps
         inp_enc["init_state"] = init_states_str
@@ -174,7 +181,12 @@ def convert_to_transformer_batches(
                 state_slice_list.append(state_slice)
 
             if training:
-                state_tgt_enc = get_tokenized_decoder_seq(tokenizer, target_list).to(device)
+                # Add end token if the state is added via multitasking
+                # For RAS and Explanation, the state sequence will be followed by the next action sequence. The next action sequence has the <eos>.
+                if add_state == "multitask":
+                    state_tgt_enc = get_tokenized_decoder_seq(tokenizer, target_list, add_end_token=True).to(device)
+                else:
+                    state_tgt_enc = get_tokenized_decoder_seq(tokenizer, target_list, add_end_token=False).to(device)
                 state_tgt_enc["input_ids"].masked_fill_(state_tgt_enc["input_ids"] == tokenizer.pad_token_id, -100)
                 state_tgt_enc["input_ids"].to(device)
             else:

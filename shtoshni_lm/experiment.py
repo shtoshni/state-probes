@@ -70,10 +70,14 @@ class Experiment(object):
         # Step 4 - Perform final evaluation
         if path.exists(self.best_model_path):
             self._load_model(self.best_model_path, last_checkpoint=False)
+            # Reload dataset to ensure full dev dataset is loaded
+            self._load_data(final_eval=True)
             self.final_eval()
         elif path.exists(self.model_path):
             logger.info("Couldn't find the best model! Using the last checkpoint!")
             self._load_model(self.model_path, last_checkpoint=False)
+            # Reload dataset to ensure full dev dataset is loaded
+            self._load_data(final_eval=True)
             self.final_eval()
         else:
             logger.info("No model accessible!")
@@ -98,7 +102,7 @@ class Experiment(object):
             # Mask to mask out these additional tokens
             self.probing_tokens_mask = [0.0] * (len(self.tokenizer) - 2) + [1.0, 1.0]
 
-    def _load_data(self):
+    def _load_data(self, final_eval=False):
         # loading data
         self.dataset, _, _ = loadData(split="train", kind="alchemy", synthetic=False, base_dir=self.args.base_data_dir)
         if self.args.num_train is not None:
@@ -106,7 +110,8 @@ class Experiment(object):
         self.dev_dataset, _, _ = loadData(
             split="dev", kind="alchemy", synthetic=False, base_dir=self.args.base_data_dir
         )
-        if self.args.num_dev is not None:
+        # For final evaluation we load the entire dev data
+        if (not final_eval) and (self.args.num_dev is not None):
             self.dev_dataset = self.dev_dataset[: self.args.num_dev]
 
     def _load_previous_checkpoint(self, last_checkpoint=True):
@@ -218,7 +223,7 @@ class Experiment(object):
                         if self.args.add_state:
                             output_seq = torch.clone(state_tgts["input_ids"][0])
                             output_seq.masked_fill_(output_seq == -100, self.tokenizer.pad_token_id)
-                            logger.info(f"Probing Decoder sequence: {self.tokenizer.decode(output_seq)}\n")
+                            logger.info(f"Probing Decoder sequence: {self.tokenizer.decode(output_seq)}")
 
                         output_seq = torch.clone(lang_tgts["input_ids"][0])
                         output_seq.masked_fill_(output_seq == -100, self.tokenizer.pad_token_id)
@@ -400,7 +405,9 @@ class Experiment(object):
                     labels = pred_state_str + lang_target
                 else:
                     labels = lang_target
-                label_ids = get_tokenized_decoder_seq(self.tokenizer, [labels])["input_ids"].to(self.device)
+                label_ids = get_tokenized_decoder_seq(self.tokenizer, [labels], add_end_token=True)["input_ids"].to(
+                    self.device
+                )
             else:
                 label_ids = lang_tgts["input_ids"]
 
@@ -426,6 +433,8 @@ class Experiment(object):
                     # Remove predicted state tokens from loss calculation
                     num_state_tokens = len(pred_state_indices)
                     lm_logits = lm_logits[num_state_tokens:]
+
+                    assert lm_logits.shape[0] == lang_tgts["input_ids"].shape[1]
 
             lang_loss = self.loss_fct(lm_logits, lang_tgts["input_ids"].view(-1))
             tot_val_loss += lang_loss.item()
@@ -536,6 +545,11 @@ class Experiment(object):
             "np_rng_state": np.random.get_state(),
             "args": self.args,
         }
+
+        # Dump train info in a separate file as well
+        output_file = path.join(path.dirname(location), "perf.json")
+        with open(output_file, "w") as f:
+            f.write(json.dumps(self.train_info, indent=4))
 
         if last_checkpoint:
             # For last checkpoint save the optimizer and scheduler states as well
