@@ -1,8 +1,9 @@
-from data.alchemy.utils import int_to_word, decide_translate, translate_states_to_nl
+import itertools
+import random
+from data.alchemy.utils import int_to_word, colors, decide_translate, translate_states_to_nl
 from data.alchemy.parseScone import getBatchesWithInit
-from transformers import BartTokenizerFast, T5TokenizerFast
+from transformers import BartTokenizerFast
 
-from data.alchemy.utils import int_to_word
 from shtoshni_lm.config import PROBE_START, PROBE_END
 
 
@@ -26,11 +27,63 @@ def get_tokenized_seq(tokenizer, seq_list):
     return tokenizer(seq_list, return_tensors="pt", padding=True, truncation=False, add_special_tokens=False)
 
 
+def get_all_beaker_state_suffixes():
+    all_beaker_states = set()
+    d_colors = {color[0]: color for color in colors}
+    for beaker_amount in range(5):
+        if beaker_amount == 0:
+            all_beaker_states.add("_")
+        else:
+            all_beaker_states = all_beaker_states.union(set(itertools.product(d_colors, repeat=beaker_amount)))
+
+    outputs = set()
+    for beaker_state in all_beaker_states:
+        if "_" in beaker_state:
+            string = f"is empty"
+        else:
+            colors_to_amount = {}
+            for item in beaker_state:
+                if d_colors[item] not in colors_to_amount:
+                    colors_to_amount[d_colors[item]] = 0
+                colors_to_amount[d_colors[item]] += 1
+
+            string = []
+            for color in sorted(colors_to_amount.keys()):
+                string.append(f"{colors_to_amount[color]} {color}")
+            if len(string) > 1:
+                string = " and ".join(string)
+            else:
+                string = string[0]
+            string = f"has {string}"
+
+        outputs.add(string)
+    return list(outputs)
+
+
+def get_all_states(tokenizer, device):
+    state_suffixes = get_all_beaker_state_suffixes()
+    all_seqs = []
+    for idx in range(len(int_to_word)):
+        beaker_str = int_to_word[idx]
+        prefix = f"the {beaker_str} beaker "
+
+        # state_seqs = [represent_add_state_str(prefix + state_suffix) for state_suffix in state_suffixes]
+        # Not adding PROBE_END because we're truncating the state sequence to just the current state
+        state_seqs = [(PROBE_START + prefix + state_suffix) for state_suffix in state_suffixes]
+
+        state_seq_ids = tokenizer.batch_encode_plus(
+            state_seqs, padding=True, add_special_tokens=False, return_tensors="pt"
+        )["input_ids"].to(device)
+
+        all_seqs.append(state_seq_ids)
+
+    return all_seqs
+
+
 def convert_to_transformer_batches(
     dataset,
     tokenizer,
     batchsize,
-    random=None,
     domain="alchemy",
     device="cuda",
     training=True,
@@ -44,7 +97,7 @@ def convert_to_transformer_batches(
     batches = list(getBatchesWithInit(dataset, batchsize, get_subsequent_state=True))
 
     # print(len(batches))
-    if random:
+    if training:
         random.shuffle(batches)
 
     for batch in batches:

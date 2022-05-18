@@ -1,9 +1,12 @@
 import os
+import json
 import argparse
 import wandb
 from os import path
 
 from shtoshni_lm.experiment import Experiment
+from shtoshni_lm.base_logger import logger
+
 
 
 def main(command_options=None):
@@ -15,7 +18,7 @@ def main(command_options=None):
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--num_train", type=int, default=None)
     parser.add_argument("--num_dev", type=int, default=None)
-    parser.add_argument("--patience", type=int, default=2)
+    parser.add_argument("--patience", type=int, default=5)
     parser.add_argument("--base_model_dir", type=str, default="models")
     parser.add_argument("--base_data_dir", type=str, default=None)
     parser.add_argument("--model_size", type=str, default="base", choices=["base", "large"])
@@ -85,6 +88,11 @@ def main(command_options=None):
 
     args.model_path = path.join(args.model_dir, "model.pt")
     args.best_model_path = path.join(args.best_model_dir, "model.pt")
+
+    config_file = path.join(args.model_dir, "config.json")
+    with open(config_file, "w") as f:
+        f.write(json.dumps(vars(args)))
+        logger.info(f"Config file at: {config_file}")
 
     if args.use_wandb:
         try:

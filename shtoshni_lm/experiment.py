@@ -1,29 +1,26 @@
 import sys
 import os
 import time
-import logging
 import random
 import wandb
 import json
+import torch
+import numpy as np
 
 from os import path
 
-import torch
-from transformers import BartTokenizerFast
-from transformers import BartForConditionalGeneration
-import numpy as np
+from transformers import BartTokenizerFast, BartForConditionalGeneration, get_linear_schedule_with_warmup
 
 from data.alchemy.utils import int_to_word
 from data.alchemy.parseScone import loadData
-from shtoshni_lm.data_transformer import convert_to_transformer_batches
-from transformers import get_linear_schedule_with_warmup
 from shtoshni_lm.config import PROBE_START, PROBE_END
-from shtoshni_lm.data_transformer import represent_add_state_str, get_tokenized_seq
-from shtoshni_lm.probing_experiment import get_all_states
-
-
-logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
-logger = logging.getLogger()
+from shtoshni_lm.data_transformer import (
+    represent_add_state_str,
+    convert_to_transformer_batches,
+    get_tokenized_seq,
+    get_all_states,
+)
+from shtoshni_lm.base_logger import logger
 
 
 class Experiment(object):
@@ -194,9 +191,7 @@ class Experiment(object):
                     self.tokenizer,
                     self.args.batchsize,
                     # Training information
-                    random=random,
                     training=True,
-                    domain="alchemy",
                     # State variable
                     add_state=self.args.add_state,
                     state_repr=self.args.state_repr,
@@ -290,7 +285,6 @@ class Experiment(object):
                     wandb.log(
                         {
                             "train/loss": lang_loss,
-                            "batch": self.train_info["global_steps"],
                         }
                     )
 
@@ -372,7 +366,6 @@ class Experiment(object):
             dataset,
             self.tokenizer,
             batchsize=1,  # We set dev batchsize to 1
-            domain="alchemy",
             device=self.device,
             add_state=self.args.add_state,
             training=False,
@@ -549,4 +542,4 @@ class Experiment(object):
             save_dict["scheduler"] = self.optim_scheduler.state_dict()
 
         torch.save(save_dict, location)
-        logging.info(f"Model saved at: {path.abspath(location)}")
+        logger.info(f"Model saved at: {path.abspath(location)}")

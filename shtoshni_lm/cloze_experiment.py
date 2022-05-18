@@ -2,19 +2,14 @@ from turtle import circle
 import torch
 import argparse
 from os import path
-import logging
 from transformers import BartForConditionalGeneration, BartTokenizerFast
 
 from shtoshni_lm.config import PROBE_START, PROBE_END
-from shtoshni_lm.probing_experiment import get_all_states
-from shtoshni_lm.data_transformer import represent_add_state_str
+from shtoshni_lm.data_transformer import get_all_states, represent_add_state_str
 from data.alchemy.utils import int_to_word, translate_nl_to_states
+from shtoshni_lm.base_logger import logger
 import wandb
 import json
-
-
-logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.INFO)
-logger = logging.getLogger()
 
 
 def get_model_name(model_path):
