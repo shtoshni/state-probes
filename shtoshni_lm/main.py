@@ -8,7 +8,6 @@ from shtoshni_lm.experiment import Experiment
 from shtoshni_lm.base_logger import logger
 
 
-
 def main(command_options=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--lr", type=float, default=1e-5)

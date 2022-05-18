@@ -23,8 +23,12 @@ def represent_add_state_str(state_str):
     return PROBE_START + state_str + PROBE_END
 
 
-def get_tokenized_seq(tokenizer, seq_list):
+def get_tokenized_decoder_seq(tokenizer, seq_list):
     return tokenizer(seq_list, return_tensors="pt", padding=True, truncation=False, add_special_tokens=False)
+
+
+def get_tokenized_encoder_seq(tokenizer, seq_list):
+    return tokenizer(seq_list, return_tensors="pt", padding=True, truncation=False, add_special_tokens=True)
 
 
 def get_all_beaker_state_suffixes():
@@ -69,7 +73,7 @@ def get_all_states(tokenizer, device):
 
         # state_seqs = [represent_add_state_str(prefix + state_suffix) for state_suffix in state_suffixes]
         # Not adding PROBE_END because we're truncating the state sequence to just the current state
-        state_seqs = [(PROBE_START + prefix + state_suffix) for state_suffix in state_suffixes]
+        state_seqs = [(PROBE_START + prefix + state_suffix + PROBE_END) for state_suffix in state_suffixes]
 
         state_seq_ids = tokenizer.batch_encode_plus(
             state_seqs, padding=True, add_special_tokens=False, return_tensors="pt"
@@ -135,10 +139,10 @@ def convert_to_transformer_batches(
         lang_targets = [" ".join(tgt) + "." for tgt in lang_targets]
 
         # Encode inputs
-        inp_enc = get_tokenized_seq(tokenizer, inps).to(device)
+        inp_enc = get_tokenized_encoder_seq(tokenizer, inps).to(device)
 
         # Encode outputs
-        lang_tgt_enc = get_tokenized_seq(tokenizer, lang_targets).to(device)
+        lang_tgt_enc = get_tokenized_decoder_seq(tokenizer, lang_targets).to(device)
 
         inp_enc["original_text"] = inps
         inp_enc["init_state"] = init_states_str
@@ -170,7 +174,7 @@ def convert_to_transformer_batches(
                 state_slice_list.append(state_slice)
 
             if training:
-                state_tgt_enc = get_tokenized_seq(tokenizer, target_list).to(device)
+                state_tgt_enc = get_tokenized_decoder_seq(tokenizer, target_list).to(device)
                 state_tgt_enc["input_ids"].masked_fill_(state_tgt_enc["input_ids"] == tokenizer.pad_token_id, -100)
                 state_tgt_enc["input_ids"].to(device)
             else:

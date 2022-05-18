@@ -17,7 +17,8 @@ from shtoshni_lm.config import PROBE_START, PROBE_END
 from shtoshni_lm.data_transformer import (
     represent_add_state_str,
     convert_to_transformer_batches,
-    get_tokenized_seq,
+    get_tokenized_decoder_seq,
+    get_tokenized_encoder_seq,
     get_all_states,
 )
 from shtoshni_lm.base_logger import logger
@@ -399,7 +400,7 @@ class Experiment(object):
                     labels = pred_state_str + lang_target
                 else:
                     labels = lang_target
-                label_ids = get_tokenized_seq(self.tokenizer, [labels])["input_ids"].to(self.device)
+                label_ids = get_tokenized_decoder_seq(self.tokenizer, [labels])["input_ids"].to(self.device)
             else:
                 label_ids = lang_tgts["input_ids"]
 
