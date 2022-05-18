@@ -485,6 +485,7 @@ class Experiment(object):
     def final_eval(self):
         model = self.model
         model.eval()
+        logger.info("Performing final evaluation")
         avg_val_loss = self.get_dataset_loss(model, self.dev_dataset)
         logger.info(f"epoch {self.train_info['num_epochs']}, avg val loss: {avg_val_loss}")
         return avg_val_loss

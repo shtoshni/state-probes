@@ -8,7 +8,7 @@ import submitit
 
 
 common_options = [
-    "--seed 60 --epochs 100 --base_model_dir /private/home/shtoshni/research/state-probes/models --base_data_dir /private/home/shtoshni/research/state-probes/ --use_wandb --num_dev 100"
+    "--seed 10 --epochs 100 --base_model_dir /private/home/shtoshni/research/state-probes/models --base_data_dir /private/home/shtoshni/research/state-probes/ --use_wandb --num_dev 50"
 ]
 
 rap_prob_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
@@ -27,10 +27,12 @@ for comb_list in product(*raw_comb_list):
         if elem:
             command_line_list.extend(elem.split(" "))
 
-    #print(command_line_list)
+    # print(command_line_list)
     parsed_list.append(command_line_list)
 
-executor = submitit.AutoExecutor(folder="/private/home/shtoshni/research/state-probes/slurm_scripts/outputs/aug_comparison")
+executor = submitit.AutoExecutor(
+    folder="/private/home/shtoshni/research/state-probes/slurm_scripts/outputs/aug_comparison"
+)
 executor.update_parameters(
     timeout_min=4320,
     slurm_partition="learnlab,learnfair,scavenge,devlab",
