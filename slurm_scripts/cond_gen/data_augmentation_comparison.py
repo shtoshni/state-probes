@@ -8,7 +8,7 @@ import submitit
 
 
 common_options = [
-    "--seed 10 --epochs 100 --base_model_dir /private/home/shtoshni/research/state-probes/models --base_data_dir /private/home/shtoshni/research/state-probes/ --use_wandb --num_dev 50"
+    "--seed 0 --epochs 100 --base_model_dir /private/home/shtoshni/research/state-probes/models --base_data_dir /private/home/shtoshni/research/state-probes/ --use_wandb --num_dev 100"
 ]
 
 rap_prob_list = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]

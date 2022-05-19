@@ -14,8 +14,6 @@ def identify_beaker_idx(state_targets, subsequent_state_targets):
             if before_content.strip() != after_content.strip():
                 output.append(idx)
 
-        # print(state_target, subsequent_state_target, output[-1])
-
     return output
 
 
@@ -82,13 +80,14 @@ def get_all_states(tokenizer, device):
         state_seqs = [(PROBE_START + prefix + state_suffix + PROBE_END) for state_suffix in state_suffixes]
         # Add end token to state label sequence
         state_seq_ids = get_tokenized_decoder_seq(tokenizer, state_seqs, add_end_token=True)["input_ids"].to(device)
-        # tokenizer.batch_encode_plus(
-        #     state_seqs, padding=True, add_special_tokens=False, return_tensors="pt"
-        # )["input_ids"].to(device)
-
         all_seqs.append(state_seq_ids)
 
     return all_seqs
+
+
+def estimate_num_batches_per_epoch(dataset, batchsize):
+    batches = list(getBatchesWithInit(dataset, batchsize, get_subsequent_state=True))
+    return len(batches)
 
 
 def convert_to_transformer_batches(

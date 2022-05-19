@@ -15,10 +15,10 @@ from data.alchemy.utils import int_to_word
 from data.alchemy.parseScone import loadData
 from shtoshni_lm.config import PROBE_START, PROBE_END
 from shtoshni_lm.data_transformer import (
+    estimate_num_batches_per_epoch,
     represent_add_state_str,
     convert_to_transformer_batches,
     get_tokenized_decoder_seq,
-    get_tokenized_encoder_seq,
     get_all_states,
 )
 from shtoshni_lm.base_logger import logger
@@ -165,7 +165,8 @@ class Experiment(object):
         """Initialize model + optimizer(s). Check if there's a checkpoint in which case we resume from there."""
         # Optimizer for clustering params
         self.optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.args.lr)
-        num_training_steps = ((610 * 24) // self.args.batchsize) * self.args.epochs
+        num_batches_per_epoch = estimate_num_batches_per_epoch(self.dataset, batchsize=self.args.batchsize)
+        num_training_steps = num_batches_per_epoch * self.args.epochs
         logger.info(f"Number of training steps: {num_training_steps}")
         self.optim_scheduler = get_linear_schedule_with_warmup(
             self.optimizer,
