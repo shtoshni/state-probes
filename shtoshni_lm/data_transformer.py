@@ -181,12 +181,7 @@ def convert_to_transformer_batches(
                 state_slice_list.append(state_slice)
 
             if training:
-                # Add end token if the state is added via multitasking
-                # For RAS and Explanation, the state sequence will be followed by the next action sequence. The next action sequence has the <eos>.
-                if add_state == "multitask":
-                    state_tgt_enc = get_tokenized_decoder_seq(tokenizer, target_list, add_end_token=True).to(device)
-                else:
-                    state_tgt_enc = get_tokenized_decoder_seq(tokenizer, target_list, add_end_token=False).to(device)
+                state_tgt_enc = get_tokenized_decoder_seq(tokenizer, target_list, add_end_token=True).to(device)
                 state_tgt_enc["input_ids"].masked_fill_(state_tgt_enc["input_ids"] == tokenizer.pad_token_id, -100)
                 state_tgt_enc["input_ids"].to(device)
             else:

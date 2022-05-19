@@ -40,7 +40,7 @@ executor.update_parameters(
     cpus_per_task=2,
     nodes=1,
     mem=450,
-    exclude="learnfair7491,learnfair7477,learnfair7487,learnfair0725",
+    exclude="learnfair7491,learnfair7477,learnfair7487,learnfair0725,learnfair0866",
     constraint="volta32gb",
 )
 
